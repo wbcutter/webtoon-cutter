@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Webtoon Cut Pro - Mobile</title>
+    <title>Webtoon Cut Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -15,7 +17,7 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a;
             color: #eee;
             overflow: hidden;
@@ -75,9 +77,34 @@
             background: #111;
             border-right: 2px solid #222;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             padding: 15px;
             transition: transform 0.3s;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #0a0a0a;
+            border-radius: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #00d4ff;
+            border-radius: 6px;
+            border: 2px solid #0a0a0a;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #00ff88;
+        }
+        
+        .sidebar {
+            scrollbar-width: auto;
+            scrollbar-color: #00d4ff #0a0a0a;
         }
         
         @media (max-width: 768px) {
@@ -93,6 +120,15 @@
             
             .sidebar.open {
                 transform: translateX(0);
+            }
+            
+            .sidebar::-webkit-scrollbar {
+                width: 16px;
+            }
+            
+            .sidebar::-webkit-scrollbar-thumb {
+                background: #00d4ff;
+                border: 3px solid #0a0a0a;
             }
         }
         
@@ -160,6 +196,16 @@
             gap: 10px;
         }
         
+        .quality-fixed {
+            background: #00ff88;
+            color: #000;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
         .btn {
             width: 100%;
             padding: 12px;
@@ -186,6 +232,7 @@
         .btn-danger { background: #ff4757; color: #fff; }
         .btn-warning { background: #ffa502; color: #000; }
         .btn-info { background: #5f27cd; color: #fff; }
+        .btn-purple { background: #9b59b6; color: #fff; }
         
         .mode-toggle {
             display: grid;
@@ -626,14 +673,9 @@
             word-break: break-all;
         }
         
-        /* iOS specific fixes */
         @supports (-webkit-touch-callout: none) {
             .canvas-area {
                 -webkit-overflow-scrolling: touch;
-            }
-            
-            input[type="file"] {
-                -webkit-appearance: none;
             }
         }
         
@@ -684,68 +726,6 @@
                 font-size: 16px;
             }
         }
-
-        /* Download result modal for iOS */
-        .download-result-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 20px;
-        }
-        
-        .download-result-modal.visible {
-            display: flex;
-        }
-        
-        .download-result-box {
-            background: #1a1a1a;
-            padding: 25px;
-            border-radius: 10px;
-            border: 2px solid #00d4ff;
-            width: 100%;
-            max-width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .download-result-images {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .download-result-item {
-            position: relative;
-            background: #0a0a0a;
-            border-radius: 8px;
-            overflow: hidden;
-            cursor: pointer;
-        }
-        
-        .download-result-item img {
-            width: 100%;
-            display: block;
-        }
-        
-        .download-result-item-name {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00d4ff;
-            padding: 5px;
-            font-size: 10px;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
@@ -769,8 +749,8 @@
                 <div class="input-group">
                     <label>Width đầu ra (px):</label>
                     <div class="range-group">
-                        <input type="range" id="targetWidth" min="690" max="2000" value="1440" step="10">
-                        <input type="number" id="targetWidthInput" min="690" max="2000" value="1440" step="10">
+                        <input type="range" id="targetWidth" min="720" max="2000" value="1440" step="10">
+                        <input type="number" id="targetWidthInput" min="720" max="2000" value="1440" step="10">
                     </div>
                 </div>
 
@@ -780,8 +760,8 @@
                 </div>
                 
                 <div class="input-group">
-                    <label>Số luồng xử lý (1-10):</label>
-                    <input type="number" id="downloadThreads" min="1" max="10" value="3">
+                    <label>Chất lượng JPEG:</label>
+                    <div class="quality-fixed">🔥 100% (MAXIMUM)</div>
                 </div>
             </div>
 
@@ -813,8 +793,14 @@
                 <button class="btn btn-info" onclick="mergeAll()">🔗 Ghép Tất Cả</button>
                 <button class="btn btn-warning" onclick="unmergeAll()" style="margin-top: 10px;">↔️ Bỏ Ghép Tất Cả</button>
                 <button class="btn btn-warning" onclick="clearAllCuts()" style="margin-top: 10px;">✂️ Xóa Tất Cả Cắt</button>
-                <button class="btn btn-success" onclick="processImages()" id="downloadBtn" style="margin-top: 10px;">💾 Tải Tất Cả JPG</button>
-                <button class="btn btn-danger" onclick="clearAll()" style="margin-top: 10px;">🗑️ Xóa Tất Cả</button>
+            </div>
+
+            <div class="section">
+                <h3>💾 Xuất File</h3>
+                <button class="btn btn-success" onclick="downloadAllJPG()" id="downloadAllBtn" style="margin-bottom: 10px;">💾 Download All JPG</button>
+                <button class="btn btn-primary" onclick="downloadZIP()" id="downloadZipBtn" style="margin-bottom: 10px;">📦 Download ZIP</button>
+                <button class="btn btn-purple" onclick="downloadPDF()" id="downloadPdfBtn">📄 Nén PDF</button>
+                <button class="btn btn-danger" onclick="clearAll()" style="margin-top: 15px;">🗑️ Xóa Tất Cả</button>
             </div>
         </div>
 
@@ -823,7 +809,7 @@
                 <div class="empty-state">
                     <div class="empty-state-icon">🎨</div>
                     <h2 style="color: #333;">Chọn ảnh để bắt đầu</h2>
-                    <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ iOS & Android</p>
+                    <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ PC, iOS & Android</p>
                     <div class="file-input-wrapper">
                         <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
                         <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
@@ -850,19 +836,8 @@
                 <div class="progress-fill" id="progressFill">0%</div>
             </div>
             <div class="progress-actions">
-                <button class="btn btn-danger" onclick="stopProcessing()" id="stopBtn" style="display: none;">⏹️ Dừng</button>
+                <button class="btn btn-danger" onclick="stopProcess()" id="stopBtn" style="display: none;">⏹️ Dừng</button>
             </div>
-        </div>
-    </div>
-
-    <div class="download-result-modal" id="downloadResultModal">
-        <div class="download-result-box">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="color: #00d4ff; margin: 0;">✅ Xử lý xong!</h3>
-                <button class="btn btn-danger" onclick="closeDownloadResult()" style="width: auto; padding: 8px 12px; font-size: 12px;">✕</button>
-            </div>
-            <p style="color: #888; font-size: 13px; margin-bottom: 15px;">Tap vào ảnh để xem/tải</p>
-            <div class="download-result-images" id="downloadResultImages"></div>
         </div>
     </div>
 
@@ -871,9 +846,8 @@
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
         const isAndroid = /Android/i.test(navigator.userAgent);
         const isMobile = isIOS || isAndroid;
-        const canDownloadDirectly = !isIOS; // iOS không support download attribute
 
-        console.log('Platform:', { isIOS, isAndroid, isMobile, canDownloadDirectly });
+        console.log('🔍 Platform:', { isIOS, isAndroid, isMobile });
 
         // ==================== STATE ====================
         let imageBlocks = [];
@@ -881,12 +855,12 @@
         let currentMode = 'view';
         let currentZoom = 1.0;
         let targetWidthValue = 1440;
+        let jpegQualityValue = 1.0; // 💯 100% quality
         let draggedCutLine = null;
         let draggedCropRegion = null;
         let cropTempPoint = null;
         let isProcessing = false;
-        let shouldStopProcessing = false;
-        let processedImages = [];
+        let shouldStop = false;
 
         // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', () => {
@@ -909,18 +883,12 @@
             });
 
             setupTouchSupport();
-
-            // Show platform info
-            if (isIOS) {
-                console.log('🍎 iOS detected - using iOS-compatible download method');
-            }
         });
 
         // ==================== MOBILE SIDEBAR ====================
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-            
             sidebar.classList.toggle('open');
             overlay.classList.toggle('visible');
         }
@@ -943,9 +911,9 @@
             });
         }
 
-        // ==================== DRAG & DROP (Desktop only) ====================
+        // ==================== DRAG & DROP ====================
         function setupDragDrop() {
-            if (isMobile) return; // Skip drag-drop on mobile
+            if (isMobile) return;
 
             const canvasArea = document.getElementById('canvasArea');
             let dragCounter = 0;
@@ -1020,7 +988,7 @@
                     
                     if (isFirstUpload && i === 0) {
                         let autoWidth = dims.width;
-                        if (autoWidth < 690) autoWidth = 720;
+                        if (autoWidth < 720) autoWidth = 720;
                         if (autoWidth > 2000) autoWidth = 2000;
                         
                         targetWidthValue = autoWidth;
@@ -1075,7 +1043,7 @@
             });
         }
 
-        // ==================== RENDER (Same as before) ====================
+        // ==================== RENDER ====================
         function renderAll() {
             const viewport = document.getElementById('canvasViewport');
             viewport.innerHTML = '';
@@ -1085,7 +1053,7 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">🎨</div>
                         <h2 style="color: #333;">Chọn ảnh để bắt đầu</h2>
-                        <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ iOS & Android</p>
+                        <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ PC, iOS & Android</p>
                         <div class="file-input-wrapper">
                             <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
                         </div>
@@ -1319,8 +1287,6 @@
 
         // ==================== TOUCH SUPPORT ====================
         function setupTouchSupport() {
-            let touchMoveHandler, touchEndHandler;
-
             document.addEventListener('touchmove', (e) => {
                 if (draggedCutLine || draggedCropRegion) {
                     handleTouchMove(e);
@@ -1531,83 +1497,7 @@
             closeSidebar();
         }
 
-        // ==================== PROCESS IMAGES ====================
-        async function processImages() {
-            if (imageBlocks.length === 0) return;
-            if (isProcessing) return;
-
-            isProcessing = true;
-            shouldStopProcessing = false;
-            processedImages = [];
-            
-            document.getElementById('downloadBtn').disabled = true;
-            document.getElementById('stopBtn').style.display = 'block';
-
-            showProgress(true, 'Đang phân tích...');
-
-            const segments = buildOutputSegments();
-            
-            updateProgress(0, `Tìm thấy ${segments.length} file...`);
-
-            const prefix = document.getElementById('outputPrefix').value || 'cut_';
-            const threads = parseInt(document.getElementById('downloadThreads').value) || 3;
-
-            let completed = 0;
-            let failed = 0;
-
-            const processQueue = segments.map((seg, idx) => ({
-                segment: seg,
-                filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
-                index: idx
-            }));
-
-            const processWorker = async (queue) => {
-                while (queue.length > 0 && !shouldStopProcessing) {
-                    const task = queue.shift();
-                    if (!task) break;
-
-                    try {
-                        const result = await processSegment(task.segment, task.filename);
-                        processedImages.push(result);
-                        completed++;
-                    } catch (err) {
-                        console.error('Process error:', task.filename, err);
-                        failed++;
-                    }
-
-                    const total = segments.length;
-                    const percent = (completed + failed) / total * 100;
-                    updateProgress(percent, `${completed}/${total} | Lỗi: ${failed}`);
-                }
-            };
-
-            const workers = [];
-            for (let i = 0; i < threads; i++) {
-                workers.push(processWorker(processQueue));
-            }
-
-            await Promise.all(workers);
-
-            showProgress(false);
-            
-            if (shouldStopProcessing) {
-                alert(`Đã dừng! Xử lý được: ${completed}/${segments.length}`);
-            } else {
-                // Show result modal
-                showDownloadResult(processedImages);
-            }
-            
-            isProcessing = false;
-            shouldStopProcessing = false;
-            document.getElementById('downloadBtn').disabled = false;
-            document.getElementById('stopBtn').style.display = 'none';
-        }
-
-        function stopProcessing() {
-            shouldStopProcessing = true;
-            document.getElementById('stopBtn').disabled = true;
-        }
-
+        // ==================== BUILD SEGMENTS ====================
         function buildOutputSegments() {
             const segments = [];
             
@@ -1647,12 +1537,25 @@
             return segments;
         }
 
-        async function processSegment(segment, filename) {
+        // ==================== PROCESS SEGMENT (UPDATED) ====================
+        async function processSegment(segment, forPDF = false) {
             const { blocks, startY, endY } = segment;
             
-            let width = targetWidthValue;
             const maxOriginalWidth = Math.max(...blocks.map(b => b.width));
-            if (maxOriginalWidth < 690) width = 720;
+            
+            let width;
+            if (forPDF) {
+                // 📄 PDF: nếu ảnh < 1000px → resize lên 1000px để "soi rõ"
+                if (maxOriginalWidth < 1000) {
+                    width = 1000;
+                } else {
+                    width = targetWidthValue;
+                }
+            } else {
+                // 💾 JPG/ZIP: giữ trong range 720-2000px
+                width = targetWidthValue;
+                if (maxOriginalWidth < 720) width = 720;
+            }
             
             const scale = width / maxOriginalWidth;
             
@@ -1727,10 +1630,7 @@
                 }
             }
 
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
-            const url = URL.createObjectURL(blob);
-
-            return { filename, url, blob };
+            return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
         }
 
         function loadImageFromUrl(url) {
@@ -1742,55 +1642,325 @@
             });
         }
 
-        // ==================== DOWNLOAD RESULT ====================
-        function showDownloadResult(images) {
-            const modal = document.getElementById('downloadResultModal');
-            const container = document.getElementById('downloadResultImages');
-            
-            container.innerHTML = '';
-            
-            images.forEach((img, idx) => {
-                const item = document.createElement('div');
-                item.className = 'download-result-item';
-                
-                const imgEl = document.createElement('img');
-                imgEl.src = img.url;
-                imgEl.onclick = () => downloadSingleImage(img.blob, img.filename);
-                
-                const name = document.createElement('div');
-                name.className = 'download-result-item-name';
-                name.textContent = img.filename;
-                
-                item.appendChild(imgEl);
-                item.appendChild(name);
-                container.appendChild(item);
-            });
-            
-            modal.classList.add('visible');
-        }
+        // ==================== DOWNLOAD ALL JPG ====================
+        async function downloadAllJPG() {
+            if (imageBlocks.length === 0) return;
+            if (isProcessing) return;
 
-        function closeDownloadResult() {
-            document.getElementById('downloadResultModal').classList.remove('visible');
-            // Clean up URLs
-            processedImages.forEach(img => URL.revokeObjectURL(img.url));
-            processedImages = [];
-        }
+            isProcessing = true;
+            shouldStop = false;
+            
+            document.getElementById('downloadAllBtn').disabled = true;
+            document.getElementById('downloadZipBtn').disabled = true;
+            document.getElementById('downloadPdfBtn').disabled = true;
+            document.getElementById('stopBtn').style.display = 'block';
 
-        function downloadSingleImage(blob, filename) {
-            if (canDownloadDirectly) {
-                // Android/Desktop: Direct download
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(url);
+            showProgress(true, 'Đang phân tích...');
+
+            const segments = buildOutputSegments();
+            const prefix = document.getElementById('outputPrefix').value || 'cut_';
+            
+            updateProgress(0, `Tìm thấy ${segments.length} file...`);
+
+            let completed = 0;
+            let failed = 0;
+
+            if (isIOS) {
+                console.log('🍎 iOS detected - downloading one by one');
+                
+                for (let i = 0; i < segments.length; i++) {
+                    if (shouldStop) break;
+
+                    const filename = `${prefix}${String(i + 1).padStart(3, '0')}.jpg`;
+                    
+                    try {
+                        const blob = await processSegment(segments[i], false); // JPG mode
+                        
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        
+                        completed++;
+                        await sleep(500);
+                    } catch (err) {
+                        console.error('Error:', filename, err);
+                        failed++;
+                    }
+
+                    const percent = (completed + failed) / segments.length * 100;
+                    updateProgress(percent, `${completed}/${segments.length} | Lỗi: ${failed}`);
+                }
             } else {
-                // iOS: Open in new tab (user can long-press to save)
-                const url = URL.createObjectURL(blob);
-                window.open(url, '_blank');
-                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                console.log('💻 PC/Android - downloading in parallel');
+                
+                const queue = segments.map((seg, idx) => ({
+                    segment: seg,
+                    filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
+                    index: idx
+                }));
+
+                const threads = Math.min(5, segments.length);
+
+                const worker = async (q) => {
+                    while (q.length > 0 && !shouldStop) {
+                        const task = q.shift();
+                        if (!task) break;
+
+                        try {
+                            const blob = await processSegment(task.segment, false); // JPG mode
+                            
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = task.filename;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            
+                            completed++;
+                            await sleep(100);
+                        } catch (err) {
+                            console.error('Error:', task.filename, err);
+                            failed++;
+                        }
+
+                        const percent = (completed + failed) / segments.length * 100;
+                        updateProgress(percent, `${completed}/${segments.length} | Lỗi: ${failed}`);
+                    }
+                };
+
+                const workers = Array(threads).fill(null).map(() => worker(queue));
+                await Promise.all(workers);
             }
+
+            showProgress(false);
+            
+            if (shouldStop) {
+                alert(`Đã dừng!\n\nTải được: ${completed}/${segments.length}`);
+            } else {
+                alert(`✅ Hoàn thành!\n\nTải được: ${completed}/${segments.length}\nLỗi: ${failed}`);
+            }
+            
+            isProcessing = false;
+            shouldStop = false;
+            document.getElementById('downloadAllBtn').disabled = false;
+            document.getElementById('downloadZipBtn').disabled = false;
+            document.getElementById('downloadPdfBtn').disabled = false;
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+
+        // ==================== DOWNLOAD ZIP ====================
+        async function downloadZIP() {
+            if (imageBlocks.length === 0) return;
+            if (isProcessing) return;
+
+            isProcessing = true;
+            shouldStop = false;
+            
+            document.getElementById('downloadAllBtn').disabled = true;
+            document.getElementById('downloadZipBtn').disabled = true;
+            document.getElementById('downloadPdfBtn').disabled = true;
+            document.getElementById('stopBtn').style.display = 'block';
+
+            showProgress(true, 'Đang tạo ảnh...');
+
+            const segments = buildOutputSegments();
+            const prefix = document.getElementById('outputPrefix').value || 'cut_';
+            
+            const zip = new JSZip();
+            let completed = 0;
+            let failed = 0;
+
+            const queue = segments.map((seg, idx) => ({
+                segment: seg,
+                filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
+                index: idx
+            }));
+
+            const threads = Math.min(5, segments.length);
+
+            const worker = async (q) => {
+                while (q.length > 0 && !shouldStop) {
+                    const task = q.shift();
+                    if (!task) break;
+
+                    try {
+                        const blob = await processSegment(task.segment, false); // JPG mode
+                        zip.file(task.filename, blob);
+                        completed++;
+                    } catch (err) {
+                        console.error('Error:', task.filename, err);
+                        failed++;
+                    }
+
+                    const percent = (completed + failed) / segments.length * 100;
+                    updateProgress(percent, `${completed}/${segments.length} | Lỗi: ${failed}`);
+                }
+            };
+
+            const workers = Array(threads).fill(null).map(() => worker(queue));
+            await Promise.all(workers);
+
+            if (shouldStop) {
+                showProgress(false);
+                alert(`Đã dừng!\n\nXử lý được: ${completed}/${segments.length}`);
+                
+                isProcessing = false;
+                shouldStop = false;
+                document.getElementById('downloadAllBtn').disabled = false;
+                document.getElementById('downloadZipBtn').disabled = false;
+                document.getElementById('downloadPdfBtn').disabled = false;
+                document.getElementById('stopBtn').style.display = 'none';
+                return;
+            }
+
+            updateProgress(0, 'Đang nén ZIP...');
+            const zipBlob = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            }, (metadata) => {
+                updateProgress(metadata.percent, `Nén ZIP: ${Math.round(metadata.percent)}%`);
+            });
+
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${prefix}output.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showProgress(false);
+            alert(`✅ Hoàn thành!\n\nĐã nén ${completed} ảnh vào ZIP\nLỗi: ${failed}`);
+            
+            isProcessing = false;
+            shouldStop = false;
+            document.getElementById('downloadAllBtn').disabled = false;
+            document.getElementById('downloadZipBtn').disabled = false;
+            document.getElementById('downloadPdfBtn').disabled = false;
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+
+        // ==================== DOWNLOAD PDF (UPDATED) ====================
+        async function downloadPDF() {
+            if (imageBlocks.length === 0) return;
+            if (isProcessing) return;
+
+            isProcessing = true;
+            shouldStop = false;
+            
+            document.getElementById('downloadAllBtn').disabled = true;
+            document.getElementById('downloadZipBtn').disabled = true;
+            document.getElementById('downloadPdfBtn').disabled = true;
+            document.getElementById('stopBtn').style.display = 'block';
+
+            showProgress(true, 'Đang tạo ảnh cho PDF...');
+
+            const segments = buildOutputSegments();
+            const prefix = document.getElementById('outputPrefix').value || 'cut_';
+            
+            let completed = 0;
+            let failed = 0;
+
+            const imageBlobs = [];
+
+            const queue = segments.map((seg, idx) => ({ segment: seg, index: idx }));
+            const threads = Math.min(5, segments.length);
+
+            const worker = async (q) => {
+                while (q.length > 0 && !shouldStop) {
+                    const task = q.shift();
+                    if (!task) break;
+
+                    try {
+                        const blob = await processSegment(task.segment, true); // 📄 PDF mode
+                        imageBlobs[task.index] = blob;
+                        completed++;
+                    } catch (err) {
+                        console.error('Error processing segment', task.index, err);
+                        failed++;
+                    }
+
+                    const percent = (completed + failed) / segments.length * 100;
+                    updateProgress(percent, `${completed}/${segments.length} | Lỗi: ${failed}`);
+                }
+            };
+
+            const workers = Array(threads).fill(null).map(() => worker(queue));
+            await Promise.all(workers);
+
+            if (shouldStop) {
+                showProgress(false);
+                alert(`Đã dừng!\n\nXử lý được: ${completed}/${segments.length}`);
+                
+                isProcessing = false;
+                shouldStop = false;
+                document.getElementById('downloadAllBtn').disabled = false;
+                document.getElementById('downloadZipBtn').disabled = false;
+                document.getElementById('downloadPdfBtn').disabled = false;
+                document.getElementById('stopBtn').style.display = 'none';
+                return;
+            }
+
+            updateProgress(0, 'Đang tạo PDF...');
+
+            const { PDFDocument } = PDFLib;
+            const pdfDoc = await PDFDocument.create();
+
+            for (let i = 0; i < imageBlobs.length; i++) {
+                if (!imageBlobs[i]) continue;
+
+                try {
+                    const arrayBuffer = await imageBlobs[i].arrayBuffer();
+                    const image = await pdfDoc.embedJpg(arrayBuffer);
+                    
+                    const imgWidth = image.width;
+                    const imgHeight = image.height;
+                    
+                    const page = pdfDoc.addPage([imgWidth, imgHeight]);
+                    
+                    page.drawImage(image, {
+                        x: 0,
+                        y: 0,
+                        width: imgWidth,
+                        height: imgHeight
+                    });
+
+                    const percent = ((i + 1) / imageBlobs.length) * 100;
+                    updateProgress(percent, `Tạo PDF: ${i + 1}/${imageBlobs.length}`);
+                } catch (err) {
+                    console.error('Error embedding image', i, err);
+                }
+            }
+
+            updateProgress(99, 'Đang nén PDF...');
+
+            const pdfBytes = await pdfDoc.save();
+            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${prefix}output.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showProgress(false);
+            alert(`✅ Tạo PDF thành công!\n\n${completed} ảnh đã được nén vào PDF\nLỗi: ${failed}`);
+            
+            isProcessing = false;
+            shouldStop = false;
+            document.getElementById('downloadAllBtn').disabled = false;
+            document.getElementById('downloadZipBtn').disabled = false;
+            document.getElementById('downloadPdfBtn').disabled = false;
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+
+        function stopProcess() {
+            shouldStop = true;
+            document.getElementById('stopBtn').disabled = true;
         }
 
         // ==================== ZOOM ====================
@@ -1806,7 +1976,6 @@
                 }, { passive: false });
             }
 
-            // Pinch zoom for mobile
             let initialDistance = 0;
             let initialZoom = 1;
             
@@ -1858,11 +2027,11 @@
         // ==================== CONFIG ====================
         function exportConfig() {
             const config = {
-                version: 8,
+                version: 11,
                 platform: { isIOS, isAndroid, isMobile },
                 targetWidth: targetWidthValue,
+                jpegQuality: jpegQualityValue,
                 outputPrefix: document.getElementById('outputPrefix').value,
-                downloadThreads: parseInt(document.getElementById('downloadThreads').value),
                 blocks: imageBlocks.map(b => ({
                     name: b.name,
                     width: b.width,
@@ -1895,9 +2064,6 @@
                 document.getElementById('targetWidth').value = config.targetWidth;
                 document.getElementById('targetWidthInput').value = config.targetWidth;
                 document.getElementById('outputPrefix').value = config.outputPrefix;
-                if (config.downloadThreads) {
-                    document.getElementById('downloadThreads').value = config.downloadThreads;
-                }
                 targetWidthValue = config.targetWidth;
             } catch (err) {
                 console.error('Config load error:', err);
@@ -1908,21 +2074,21 @@
 
         // ==================== UTILS ====================
         function setupRangeInputs() {
-            const slider = document.getElementById('targetWidth');
-            const input = document.getElementById('targetWidthInput');
+            const widthSlider = document.getElementById('targetWidth');
+            const widthInput = document.getElementById('targetWidthInput');
             
-            slider.addEventListener('input', (e) => {
+            widthSlider.addEventListener('input', (e) => {
                 targetWidthValue = parseInt(e.target.value);
-                input.value = targetWidthValue;
+                widthInput.value = targetWidthValue;
             });
             
-            input.addEventListener('input', (e) => {
+            widthInput.addEventListener('input', (e) => {
                 let val = parseInt(e.target.value);
-                if (val < 690) val = 690;
+                if (val < 720) val = 720;
                 if (val > 2000) val = 2000;
                 targetWidthValue = val;
-                slider.value = val;
-                input.value = val;
+                widthSlider.value = val;
+                widthInput.value = val;
             });
         }
 
