@@ -2,52 +2,115 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webtoon Cut Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Webtoon Cut Pro - Mobile</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #0a0a0a;
             color: #eee;
             overflow: hidden;
+            touch-action: pan-y pinch-zoom;
+            -webkit-user-select: none;
+            user-select: none;
         }
         
         .header {
             background: #111;
-            padding: 15px 20px;
+            padding: 12px 15px;
             border-bottom: 2px solid #00d4ff;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
         .header h1 {
-            font-size: 20px;
+            font-size: 16px;
             color: #00d4ff;
         }
         
         .header-controls {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+        }
+        
+        .menu-toggle {
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
         }
         
         .main-container {
             display: flex;
-            height: calc(100vh - 60px);
+            height: calc(100vh - 52px);
+            position: relative;
         }
         
         .sidebar {
-            width: 320px;
+            width: 100%;
+            max-width: 320px;
             background: #111;
             border-right: 2px solid #222;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             padding: 15px;
+            transition: transform 0.3s;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 52px;
+                left: 0;
+                bottom: 0;
+                z-index: 90;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 52px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 85;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar-overlay.visible {
+                display: block;
+            }
         }
         
         .section {
@@ -78,16 +141,12 @@
         input[type="text"],
         input[type="number"],
         input[type="range"] {
-            padding: 8px;
+            padding: 10px;
             background: #0a0a0a;
             border: 1px solid #333;
-            border-radius: 4px;
+            border-radius: 6px;
             color: #fff;
-            font-size: 13px;
-            width: 100%;
-        }
-        
-        input[type="range"] {
+            font-size: 14px;
             width: 100%;
         }
         
@@ -103,23 +162,23 @@
         
         .btn {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 14px;
             transition: all 0.2s;
+            touch-action: manipulation;
         }
         
-        .btn:hover {
-            transform: translateY(-1px);
+        .btn:active {
+            transform: scale(0.98);
         }
         
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
         
         .btn-primary { background: #00d4ff; color: #000; }
@@ -136,7 +195,7 @@
         }
         
         .mode-btn {
-            padding: 8px;
+            padding: 10px;
             background: #0a0a0a;
             border: 2px solid #333;
             border-radius: 6px;
@@ -145,6 +204,7 @@
             font-size: 12px;
             transition: all 0.2s;
             text-align: center;
+            touch-action: manipulation;
         }
         
         .mode-btn.active {
@@ -156,6 +216,7 @@
         .canvas-area {
             flex: 1;
             overflow: auto;
+            -webkit-overflow-scrolling: touch;
             background: #0a0a0a;
             position: relative;
         }
@@ -168,9 +229,8 @@
         
         .canvas-viewport {
             min-height: 100%;
-            padding: 20px;
+            padding: 15px;
             transform-origin: top left;
-            transition: transform 0.2s ease-out;
         }
         
         .empty-state {
@@ -178,13 +238,38 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
+            min-height: calc(100vh - 200px);
             color: #333;
+            padding: 20px;
         }
         
         .empty-state-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        
+        .empty-state h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .file-input-wrapper {
+            margin-top: 20px;
+        }
+        
+        .file-input-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #00d4ff;
+            color: #000;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        
+        .file-input-btn:active {
+            transform: scale(0.98);
         }
         
         .image-block {
@@ -206,39 +291,39 @@
             width: 100%;
             pointer-events: all;
             cursor: crosshair;
-            -webkit-user-select: none;
             user-select: none;
+            -webkit-user-select: none;
             vertical-align: bottom;
+            touch-action: none;
         }
         
         .merge-divider {
             position: relative;
-            padding: 15px 0;
+            padding: 12px 0;
             text-align: center;
             display: block;
         }
         
         .merge-btn-inline {
             display: inline-block;
-            padding: 8px 20px;
+            padding: 10px 20px;
             background: #00d4ff;
             color: #000;
             border: none;
             border-radius: 20px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 12px;
-            transition: all 0.2s;
+            font-size: 13px;
+            touch-action: manipulation;
         }
         
-        .merge-btn-inline:hover {
-            background: #00ff88;
-            transform: scale(1.05);
+        .merge-btn-inline:active {
+            transform: scale(0.95);
         }
         
         .merge-line-container {
             position: relative;
-            height: 1px;
+            height: 2px;
             background: #00ff88;
             display: none;
             align-items: center;
@@ -254,17 +339,14 @@
             background: #00ff88;
             color: #000;
             border: none;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
+            padding: 6px 14px;
+            border-radius: 14px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
             z-index: 10;
-        }
-        
-        .unmerge-btn:hover {
-            background: #00d4ff;
+            touch-action: manipulation;
         }
         
         .cut-line-overlay {
@@ -280,13 +362,14 @@
             position: absolute;
             left: 0;
             right: 0;
-            height: 30px;
-            margin-top: -15px;
+            height: 44px;
+            margin-top: -22px;
             z-index: 100;
             display: flex;
             align-items: center;
             cursor: ns-resize;
             pointer-events: all;
+            touch-action: none;
         }
         
         .cut-line {
@@ -299,13 +382,13 @@
         .cut-line-label {
             position: absolute;
             left: 50%;
-            top: -20px;
+            top: -25px;
             transform: translateX(-50%);
             background: #ff1493;
             color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: bold;
             white-space: nowrap;
             pointer-events: none;
@@ -326,7 +409,7 @@
             border-bottom: 3px solid #ff0000;
             pointer-events: all;
             z-index: 85;
-            min-height: 20px;
+            min-height: 30px;
         }
         
         .crop-drag-top,
@@ -334,17 +417,18 @@
             position: absolute;
             left: 0;
             right: 0;
-            height: 15px;
+            height: 22px;
             cursor: ns-resize;
             z-index: 90;
+            touch-action: none;
         }
         
         .crop-drag-top {
-            top: -7px;
+            top: -11px;
         }
         
         .crop-drag-bottom {
-            bottom: -7px;
+            bottom: -11px;
         }
         
         .crop-label {
@@ -354,7 +438,7 @@
             transform: translateY(-50%);
             background: #ff0000;
             color: white;
-            padding: 4px 12px;
+            padding: 6px 12px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: bold;
@@ -366,13 +450,14 @@
             background: #ff1493;
             color: white;
             border: none;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
+            padding: 6px 14px;
+            border-radius: 14px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
             margin-left: 10px;
             white-space: nowrap;
+            touch-action: manipulation;
         }
         
         .remove-crop-btn {
@@ -384,23 +469,21 @@
             pointer-events: all;
         }
         
-        .remove-cut-btn:hover,
-        .remove-crop-btn:hover {
-            opacity: 0.8;
-        }
-        
         .mode-indicator {
             position: fixed;
-            top: 70px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
             padding: 10px 20px;
-            border-radius: 8px;
+            border-radius: 20px;
             border: 2px solid #00d4ff;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             z-index: 1000;
             display: none;
+            max-width: 90%;
+            text-align: center;
         }
         
         .mode-indicator.visible {
@@ -411,40 +494,60 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 10px;
-            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 8px;
+            border-radius: 12px;
             border: 2px solid #00d4ff;
             display: flex;
             gap: 5px;
+            z-index: 80;
+        }
+        
+        @media (max-width: 768px) {
+            .zoom-controls {
+                bottom: 10px;
+                right: 10px;
+                padding: 6px;
+            }
         }
         
         .zoom-btn {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             background: #1a1a1a;
             border: 1px solid #333;
-            border-radius: 6px;
+            border-radius: 8px;
             color: #00d4ff;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
+            touch-action: manipulation;
         }
         
-        .zoom-btn:hover {
+        @media (max-width: 768px) {
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+        }
+        
+        .zoom-btn:active {
             background: #00d4ff;
             color: #000;
         }
         
         .zoom-level {
             color: #00d4ff;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
-            padding: 0 10px;
+            padding: 0 8px;
             display: flex;
             align-items: center;
+            min-width: 50px;
+            justify-content: center;
         }
         
         .progress-overlay {
@@ -458,6 +561,7 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
+            padding: 20px;
         }
         
         .progress-overlay.visible {
@@ -466,10 +570,11 @@
         
         .progress-box {
             background: #1a1a1a;
-            padding: 30px;
+            padding: 25px;
             border-radius: 10px;
             border: 2px solid #00d4ff;
-            min-width: 400px;
+            width: 100%;
+            max-width: 400px;
         }
         
         .progress-bar {
@@ -510,19 +615,26 @@
             position: absolute;
             top: 5px;
             right: 5px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             color: #00d4ff;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 10px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
             z-index: 50;
             pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s;
+            max-width: calc(100% - 10px);
+            word-break: break-all;
         }
         
-        .image-block:hover .image-info-tooltip {
-            opacity: 1;
+        /* iOS specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            .canvas-area {
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            input[type="file"] {
+                -webkit-appearance: none;
+            }
         }
         
         ::-webkit-scrollbar {
@@ -541,20 +653,116 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #00d4ff;
         }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 14px;
+            }
+            
+            .section {
+                padding: 12px;
+            }
+            
+            .section h3 {
+                font-size: 13px;
+            }
+            
+            .btn {
+                padding: 10px;
+                font-size: 13px;
+            }
+            
+            .canvas-viewport {
+                padding: 10px;
+            }
+            
+            .empty-state-icon {
+                font-size: 50px;
+            }
+            
+            .empty-state h2 {
+                font-size: 16px;
+            }
+        }
+
+        /* Download result modal for iOS */
+        .download-result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+        
+        .download-result-modal.visible {
+            display: flex;
+        }
+        
+        .download-result-box {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #00d4ff;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .download-result-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .download-result-item {
+            position: relative;
+            background: #0a0a0a;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .download-result-item img {
+            width: 100%;
+            display: block;
+        }
+        
+        .download-result-item-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00d4ff;
+            padding: 5px;
+            font-size: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div class="header">
+        <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
         <h1>✂️ WEBTOON CUT PRO</h1>
         <div class="header-controls">
-            <button class="btn btn-primary" onclick="exportConfig()" style="width: auto; padding: 8px 15px;">💾 Config</button>
-            <button class="btn btn-warning" onclick="importConfig()" style="width: auto; padding: 8px 15px;">📂 Load</button>
+            <button class="btn btn-primary" onclick="exportConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">💾</button>
+            <button class="btn btn-warning" onclick="importConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">📂</button>
             <input type="file" id="configInput" accept=".json" style="display: none;">
         </div>
     </div>
 
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
     <div class="main-container">
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="section">
                 <h3>⚙️ Cấu Hình</h3>
                 
@@ -572,8 +780,8 @@
                 </div>
                 
                 <div class="input-group">
-                    <label>Số luồng download (3-15):</label>
-                    <input type="number" id="downloadThreads" min="3" max="15" value="3">
+                    <label>Số luồng xử lý (1-10):</label>
+                    <input type="number" id="downloadThreads" min="1" max="10" value="3">
                 </div>
             </div>
 
@@ -587,14 +795,14 @@
                 
                 <div id="cutSettings" style="display: none; margin-top: 10px;">
                     <p style="font-size: 11px; color: #666;">
-                        Click vào ảnh để đặt đường cắt<br>
-                        Kéo đường cắt để điều chỉnh (1px)
+                        Tap vào ảnh để đặt đường cắt<br>
+                        Kéo đường cắt để điều chỉnh
                     </p>
                 </div>
                 
                 <div id="cropSettings" style="display: none; margin-top: 10px;">
                     <p style="font-size: 11px; color: #666;">
-                        Click 2 lần: Y1 → Y2 để tạo vùng crop<br>
+                        Tap 2 lần: Y1 → Y2 để tạo vùng crop<br>
                         Kéo viền để điều chỉnh
                     </p>
                 </div>
@@ -605,7 +813,7 @@
                 <button class="btn btn-info" onclick="mergeAll()">🔗 Ghép Tất Cả</button>
                 <button class="btn btn-warning" onclick="unmergeAll()" style="margin-top: 10px;">↔️ Bỏ Ghép Tất Cả</button>
                 <button class="btn btn-warning" onclick="clearAllCuts()" style="margin-top: 10px;">✂️ Xóa Tất Cả Cắt</button>
-                <button class="btn btn-success" onclick="downloadAll()" id="downloadBtn" style="margin-top: 10px;">💾 Tải Tất Cả JPG</button>
+                <button class="btn btn-success" onclick="processImages()" id="downloadBtn" style="margin-top: 10px;">💾 Tải Tất Cả JPG</button>
                 <button class="btn btn-danger" onclick="clearAll()" style="margin-top: 10px;">🗑️ Xóa Tất Cả</button>
             </div>
         </div>
@@ -614,8 +822,12 @@
             <div class="canvas-viewport" id="canvasViewport">
                 <div class="empty-state">
                     <div class="empty-state-icon">🎨</div>
-                    <h2 style="color: #333;">Kéo thả ảnh vào đây</h2>
-                    <p style="color: #222;">Metadata only - Siêu nhanh</p>
+                    <h2 style="color: #333;">Chọn ảnh để bắt đầu</h2>
+                    <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ iOS & Android</p>
+                    <div class="file-input-wrapper">
+                        <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
+                        <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+                    </div>
                 </div>
             </div>
         </div>
@@ -638,12 +850,31 @@
                 <div class="progress-fill" id="progressFill">0%</div>
             </div>
             <div class="progress-actions">
-                <button class="btn btn-danger" onclick="stopDownload()" id="stopDownloadBtn" style="display: none;">⏹️ Dừng Download</button>
+                <button class="btn btn-danger" onclick="stopProcessing()" id="stopBtn" style="display: none;">⏹️ Dừng</button>
             </div>
         </div>
     </div>
 
+    <div class="download-result-modal" id="downloadResultModal">
+        <div class="download-result-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: #00d4ff; margin: 0;">✅ Xử lý xong!</h3>
+                <button class="btn btn-danger" onclick="closeDownloadResult()" style="width: auto; padding: 8px 12px; font-size: 12px;">✕</button>
+            </div>
+            <p style="color: #888; font-size: 13px; margin-bottom: 15px;">Tap vào ảnh để xem/tải</p>
+            <div class="download-result-images" id="downloadResultImages"></div>
+        </div>
+    </div>
+
     <script>
+        // ==================== DETECT PLATFORM ====================
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isMobile = isIOS || isAndroid;
+        const canDownloadDirectly = !isIOS; // iOS không support download attribute
+
+        console.log('Platform:', { isIOS, isAndroid, isMobile, canDownloadDirectly });
+
         // ==================== STATE ====================
         let imageBlocks = [];
         let mergeStates = [];
@@ -653,14 +884,16 @@
         let draggedCutLine = null;
         let draggedCropRegion = null;
         let cropTempPoint = null;
-        let isDownloading = false;
-        let downloadShouldStop = false;
+        let isProcessing = false;
+        let shouldStopProcessing = false;
+        let processedImages = [];
 
         // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', () => {
             setupDragDrop();
             setupRangeInputs();
             setupZoomControls();
+            setupFileInput();
             applyZoom();
             
             document.addEventListener('contextmenu', (e) => {
@@ -674,10 +907,46 @@
                     e.preventDefault();
                 }
             });
+
+            setupTouchSupport();
+
+            // Show platform info
+            if (isIOS) {
+                console.log('🍎 iOS detected - using iOS-compatible download method');
+            }
         });
 
-        // ==================== DRAG & DROP ====================
+        // ==================== MOBILE SIDEBAR ====================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('visible');
+        }
+
+        function closeSidebar() {
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('visible');
+            }
+        }
+
+        // ==================== FILE INPUT ====================
+        function setupFileInput() {
+            document.getElementById('fileInput').addEventListener('change', async (e) => {
+                const files = Array.from(e.target.files);
+                if (files.length > 0) {
+                    await handleFilesUpload(files);
+                }
+                e.target.value = '';
+            });
+        }
+
+        // ==================== DRAG & DROP (Desktop only) ====================
         function setupDragDrop() {
+            if (isMobile) return; // Skip drag-drop on mobile
+
             const canvasArea = document.getElementById('canvasArea');
             let dragCounter = 0;
             
@@ -723,10 +992,6 @@
                 
                 const existingNames = new Set(imageBlocks.map(b => b.name));
                 const newFiles = files.filter(f => !existingNames.has(f.name));
-                
-                if (newFiles.length < files.length) {
-                    console.log(`Skipped ${files.length - newFiles.length} duplicate files`);
-                }
                 
                 if (newFiles.length > 0) {
                     await handleFilesUpload(newFiles);
@@ -788,6 +1053,7 @@
             showProgress(false);
 
             renderAll();
+            closeSidebar();
         }
 
         function getImageDimensions(file) {
@@ -809,7 +1075,7 @@
             });
         }
 
-        // ==================== RENDER ====================
+        // ==================== RENDER (Same as before) ====================
         function renderAll() {
             const viewport = document.getElementById('canvasViewport');
             viewport.innerHTML = '';
@@ -818,8 +1084,11 @@
                 viewport.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">🎨</div>
-                        <h2 style="color: #333;">Kéo thả ảnh vào đây</h2>
-                        <p style="color: #222;">Metadata only - Siêu nhanh</p>
+                        <h2 style="color: #333;">Chọn ảnh để bắt đầu</h2>
+                        <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ iOS & Android</p>
+                        <div class="file-input-wrapper">
+                            <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
+                        </div>
                     </div>
                 `;
                 return;
@@ -835,18 +1104,12 @@
                     if (isMerged) {
                         const mergeLine = document.createElement('div');
                         mergeLine.className = 'merge-line-container visible';
-                        mergeLine.innerHTML = `
-                            <button class="unmerge-btn" onclick="toggleMerge(${index})">Bỏ ghép</button>
-                        `;
+                        mergeLine.innerHTML = `<button class="unmerge-btn" onclick="toggleMerge(${index})">Bỏ ghép</button>`;
                         viewport.appendChild(mergeLine);
                     } else {
                         const mergeDiv = document.createElement('div');
                         mergeDiv.className = 'merge-divider';
-                        mergeDiv.innerHTML = `
-                            <button class="merge-btn-inline" onclick="toggleMerge(${index})">
-                                🔗 Ghép Ảnh
-                            </button>
-                        `;
+                        mergeDiv.innerHTML = `<button class="merge-btn-inline" onclick="toggleMerge(${index})">🔗 Ghép Ảnh</button>`;
                         viewport.appendChild(mergeDiv);
                     }
                 }
@@ -877,7 +1140,7 @@
 
             const tooltip = document.createElement('div');
             tooltip.className = 'image-info-tooltip';
-            tooltip.textContent = `${String(index + 1).padStart(3, '0')}. ${block.name} | ${block.width}×${block.height}px`;
+            tooltip.textContent = `${String(index + 1).padStart(3, '0')}. ${block.name}`;
             content.appendChild(tooltip);
 
             const cutOverlay = document.createElement('div');
@@ -918,10 +1181,15 @@
             container.dataset.blockIndex = blockIndex;
             container.dataset.cutY = y;
             
-            container.onmousedown = (e) => {
+            const startDrag = (e) => {
                 if (e.target.classList.contains('remove-cut-btn')) return;
-                startDragCutLine(e, block, y, blockIndex);
+                const touch = e.touches ? e.touches[0] : e;
+                startDragCutLine(touch, block, y, blockIndex);
+                if (e.preventDefault) e.preventDefault();
             };
+            
+            container.addEventListener('mousedown', startDrag);
+            container.addEventListener('touchstart', startDrag, { passive: false });
             
             const line = document.createElement('div');
             line.className = 'cut-line';
@@ -964,18 +1232,26 @@
             
             const topDrag = document.createElement('div');
             topDrag.className = 'crop-drag-top';
-            topDrag.onmousedown = (e) => {
+            const startTopDrag = (e) => {
                 e.stopPropagation();
-                startDragCropEdge(e, block, region, blockIndex, regionIdx, 'top', scale);
+                const touch = e.touches ? e.touches[0] : e;
+                startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'top', scale);
+                if (e.preventDefault) e.preventDefault();
             };
+            topDrag.addEventListener('mousedown', startTopDrag);
+            topDrag.addEventListener('touchstart', startTopDrag, { passive: false });
             container.appendChild(topDrag);
             
             const bottomDrag = document.createElement('div');
             bottomDrag.className = 'crop-drag-bottom';
-            bottomDrag.onmousedown = (e) => {
+            const startBottomDrag = (e) => {
                 e.stopPropagation();
-                startDragCropEdge(e, block, region, blockIndex, regionIdx, 'bottom', scale);
+                const touch = e.touches ? e.touches[0] : e;
+                startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'bottom', scale);
+                if (e.preventDefault) e.preventDefault();
             };
+            bottomDrag.addEventListener('mousedown', startBottomDrag);
+            bottomDrag.addEventListener('touchstart', startBottomDrag, { passive: false });
             container.appendChild(bottomDrag);
             
             return container;
@@ -1003,7 +1279,7 @@
             } else if (currentMode === 'crop') {
                 if (!cropTempPoint) {
                     cropTempPoint = { blockIndex, y: actualY };
-                    showModeIndicator(`🗑️ Crop: Y1 = ${actualY}px<br>Click Y2 →`);
+                    showModeIndicator(`🗑️ Crop: Y1 = ${actualY}px<br>Tap Y2 →`);
                 } else if (cropTempPoint.blockIndex === blockIndex) {
                     const startY = Math.min(cropTempPoint.y, actualY);
                     const endY = Math.max(cropTempPoint.y, actualY);
@@ -1041,38 +1317,67 @@
             }
         }
 
-        // ==================== DRAG CUT LINE ====================
-        function startDragCutLine(e, block, oldY, blockIndex) {
-            e.preventDefault();
-            
-            const blockEl = document.getElementById(`block-${blockIndex}`);
-            const img = blockEl.querySelector('.image-chunk');
-            const rect = img.getBoundingClientRect();
-            const scale = rect.height / block.height;
-            
-            draggedCutLine = { block, oldY, blockIndex, rect, scale, img };
-            
-            const lineContainer = e.currentTarget;
-            
-            document.onmousemove = (e) => {
-                if (!draggedCutLine) return;
-                
-                const mouseY = e.clientY - draggedCutLine.rect.top;
+        // ==================== TOUCH SUPPORT ====================
+        function setupTouchSupport() {
+            let touchMoveHandler, touchEndHandler;
+
+            document.addEventListener('touchmove', (e) => {
+                if (draggedCutLine || draggedCropRegion) {
+                    handleTouchMove(e);
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchend', (e) => {
+                if (draggedCutLine || draggedCropRegion) {
+                    handleTouchEnd(e);
+                }
+            });
+        }
+
+        function handleTouchMove(e) {
+            if (draggedCutLine) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseY = touch.clientY - draggedCutLine.rect.top;
                 let actualY = Math.round(mouseY / draggedCutLine.scale);
                 
                 if (actualY < 1) actualY = 1;
                 if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
                 
-                lineContainer.style.top = (actualY * draggedCutLine.scale) + 'px';
+                const lineContainer = document.querySelector(`[data-block-index="${draggedCutLine.blockIndex}"][data-cut-y="${draggedCutLine.oldY}"]`);
+                if (lineContainer) {
+                    lineContainer.style.top = (actualY * draggedCutLine.scale) + 'px';
+                    const label = lineContainer.querySelector('.cut-line-label');
+                    if (label) label.textContent = `${actualY}px`;
+                }
+            } else if (draggedCropRegion) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseY = touch.clientY - draggedCropRegion.rect.top;
+                let actualY = Math.round(mouseY / draggedCropRegion.scale);
                 
-                const label = lineContainer.querySelector('.cut-line-label');
-                if (label) label.textContent = `${actualY}px`;
-            };
-            
-            document.onmouseup = (e) => {
-                if (!draggedCutLine) return;
+                if (actualY < 0) actualY = 0;
+                if (actualY >= draggedCropRegion.block.height) actualY = draggedCropRegion.block.height;
                 
-                const mouseY = e.clientY - draggedCutLine.rect.top;
+                if (draggedCropRegion.edge === 'top') {
+                    if (actualY < draggedCropRegion.region.endY - 10) {
+                        draggedCropRegion.region.startY = actualY;
+                    }
+                } else {
+                    if (actualY > draggedCropRegion.region.startY + 10) {
+                        draggedCropRegion.region.endY = actualY;
+                    }
+                }
+                
+                const content = draggedCropRegion.img.closest('.image-content');
+                renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (draggedCutLine) {
+                const touch = e.changedTouches[0];
+                const mouseY = touch.clientY - draggedCutLine.rect.top;
                 let actualY = Math.round(mouseY / draggedCutLine.scale);
                 
                 if (actualY < 1) actualY = 1;
@@ -1094,15 +1399,58 @@
                 }
                 
                 draggedCutLine = null;
-                document.onmousemove = null;
-                document.onmouseup = null;
-            };
+            } else if (draggedCropRegion) {
+                draggedCropRegion = null;
+            }
         }
 
-        // ==================== DRAG CROP EDGE ====================
-        function startDragCropEdge(e, block, region, blockIndex, regionIdx, edge, scale) {
-            e.preventDefault();
+        function startDragCutLine(e, block, oldY, blockIndex) {
+            const blockEl = document.getElementById(`block-${blockIndex}`);
+            const img = blockEl.querySelector('.image-chunk');
+            const rect = img.getBoundingClientRect();
+            const scale = rect.height / block.height;
             
+            draggedCutLine = { block, oldY, blockIndex, rect, scale, img };
+            
+            if (!isMobile) {
+                document.onmousemove = (e) => {
+                    if (!draggedCutLine) return;
+                    const mouseY = e.clientY - draggedCutLine.rect.top;
+                    let actualY = Math.round(mouseY / draggedCutLine.scale);
+                    if (actualY < 1) actualY = 1;
+                    if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
+                    const lineContainer = document.querySelector(`[data-block-index="${draggedCutLine.blockIndex}"][data-cut-y="${draggedCutLine.oldY}"]`);
+                    if (lineContainer) {
+                        lineContainer.style.top = (actualY * draggedCutLine.scale) + 'px';
+                        const label = lineContainer.querySelector('.cut-line-label');
+                        if (label) label.textContent = `${actualY}px`;
+                    }
+                };
+                
+                document.onmouseup = (e) => {
+                    if (!draggedCutLine) return;
+                    const mouseY = e.clientY - draggedCutLine.rect.top;
+                    let actualY = Math.round(mouseY / draggedCutLine.scale);
+                    if (actualY < 1) actualY = 1;
+                    if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
+                    if (actualY !== draggedCutLine.oldY) {
+                        const oldIndex = draggedCutLine.block.cutPoints.indexOf(draggedCutLine.oldY);
+                        if (oldIndex > -1) draggedCutLine.block.cutPoints.splice(oldIndex, 1);
+                        if (!draggedCutLine.block.cutPoints.includes(actualY)) {
+                            draggedCutLine.block.cutPoints.push(actualY);
+                            draggedCutLine.block.cutPoints.sort((a, b) => a - b);
+                        }
+                        const content = draggedCutLine.img.closest('.image-content');
+                        renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
+                    }
+                    draggedCutLine = null;
+                    document.onmousemove = null;
+                    document.onmouseup = null;
+                };
+            }
+        }
+
+        function startDragCropEdge(e, block, region, blockIndex, regionIdx, edge, scale) {
             const blockEl = document.getElementById(`block-${blockIndex}`);
             const img = blockEl.querySelector('.image-chunk');
             const rect = img.getBoundingClientRect();
@@ -1110,34 +1458,28 @@
             
             draggedCropRegion = { block, region, blockIndex, regionIdx, edge, rect, scale: currentScale, img };
             
-            document.onmousemove = (e) => {
-                if (!draggedCropRegion) return;
-                
-                const mouseY = e.clientY - draggedCropRegion.rect.top;
-                let actualY = Math.round(mouseY / draggedCropRegion.scale);
-                
-                if (actualY < 0) actualY = 0;
-                if (actualY >= draggedCropRegion.block.height) actualY = draggedCropRegion.block.height;
-                
-                if (draggedCropRegion.edge === 'top') {
-                    if (actualY < draggedCropRegion.region.endY - 10) {
-                        draggedCropRegion.region.startY = actualY;
+            if (!isMobile) {
+                document.onmousemove = (e) => {
+                    if (!draggedCropRegion) return;
+                    const mouseY = e.clientY - draggedCropRegion.rect.top;
+                    let actualY = Math.round(mouseY / draggedCropRegion.scale);
+                    if (actualY < 0) actualY = 0;
+                    if (actualY >= draggedCropRegion.block.height) actualY = draggedCropRegion.block.height;
+                    if (draggedCropRegion.edge === 'top') {
+                        if (actualY < draggedCropRegion.region.endY - 10) draggedCropRegion.region.startY = actualY;
+                    } else {
+                        if (actualY > draggedCropRegion.region.startY + 10) draggedCropRegion.region.endY = actualY;
                     }
-                } else {
-                    if (actualY > draggedCropRegion.region.startY + 10) {
-                        draggedCropRegion.region.endY = actualY;
-                    }
-                }
+                    const content = draggedCropRegion.img.closest('.image-content');
+                    renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
+                };
                 
-                const content = draggedCropRegion.img.closest('.image-content');
-                renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
-            };
-            
-            document.onmouseup = () => {
-                draggedCropRegion = null;
-                document.onmousemove = null;
-                document.onmouseup = null;
-            };
+                document.onmouseup = () => {
+                    draggedCropRegion = null;
+                    document.onmousemove = null;
+                    document.onmouseup = null;
+                };
+            }
         }
 
         // ==================== MODE ====================
@@ -1146,10 +1488,8 @@
             document.getElementById('viewMode').classList.toggle('active', mode === 'view');
             document.getElementById('cutMode').classList.toggle('active', mode === 'cut');
             document.getElementById('cropMode').classList.toggle('active', mode === 'crop');
-            
             document.getElementById('cutSettings').style.display = mode === 'cut' ? 'block' : 'none';
             document.getElementById('cropSettings').style.display = mode === 'crop' ? 'block' : 'none';
-            
             cropTempPoint = null;
             hideModeIndicator();
         }
@@ -1173,11 +1513,13 @@
         function mergeAll() {
             mergeStates.forEach(state => { state.merged = true; });
             renderAll();
+            closeSidebar();
         }
 
         function unmergeAll() {
             mergeStates.forEach(state => { state.merged = false; });
             renderAll();
+            closeSidebar();
         }
 
         function clearAllCuts() {
@@ -1186,18 +1528,20 @@
                 b.cropRegions = [];
             });
             renderAll();
+            closeSidebar();
         }
 
-        // ==================== DOWNLOAD ====================
-        async function downloadAll() {
+        // ==================== PROCESS IMAGES ====================
+        async function processImages() {
             if (imageBlocks.length === 0) return;
-            if (isDownloading) return;
+            if (isProcessing) return;
 
-            isDownloading = true;
-            downloadShouldStop = false;
+            isProcessing = true;
+            shouldStopProcessing = false;
+            processedImages = [];
             
             document.getElementById('downloadBtn').disabled = true;
-            document.getElementById('stopDownloadBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'block';
 
             showProgress(true, 'Đang phân tích...');
 
@@ -1211,56 +1555,57 @@
             let completed = 0;
             let failed = 0;
 
-            const downloadQueue = segments.map((seg, idx) => ({
+            const processQueue = segments.map((seg, idx) => ({
                 segment: seg,
                 filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
                 index: idx
             }));
 
-            const downloadWorker = async (queue) => {
-                while (queue.length > 0 && !downloadShouldStop) {
+            const processWorker = async (queue) => {
+                while (queue.length > 0 && !shouldStopProcessing) {
                     const task = queue.shift();
                     if (!task) break;
 
                     try {
-                        await downloadSegment(task.segment, task.filename);
+                        const result = await processSegment(task.segment, task.filename);
+                        processedImages.push(result);
                         completed++;
                     } catch (err) {
-                        console.error('Download error:', task.filename, err);
+                        console.error('Process error:', task.filename, err);
                         failed++;
                     }
 
                     const total = segments.length;
                     const percent = (completed + failed) / total * 100;
-                    updateProgress(percent, `Đã tải: ${completed}/${total} | Lỗi: ${failed} | Luồng: ${threads}`);
+                    updateProgress(percent, `${completed}/${total} | Lỗi: ${failed}`);
                 }
             };
 
             const workers = [];
             for (let i = 0; i < threads; i++) {
-                workers.push(downloadWorker(downloadQueue));
+                workers.push(processWorker(processQueue));
             }
 
             await Promise.all(workers);
 
-            if (downloadShouldStop) {
-                updateProgress(100, `Đã dừng! Tải được: ${completed}/${segments.length}`);
-            } else {
-                updateProgress(100, `Hoàn thành! ${completed}/${segments.length} files`);
-            }
-
-            await sleep(2000);
             showProgress(false);
             
-            isDownloading = false;
-            downloadShouldStop = false;
+            if (shouldStopProcessing) {
+                alert(`Đã dừng! Xử lý được: ${completed}/${segments.length}`);
+            } else {
+                // Show result modal
+                showDownloadResult(processedImages);
+            }
+            
+            isProcessing = false;
+            shouldStopProcessing = false;
             document.getElementById('downloadBtn').disabled = false;
-            document.getElementById('stopDownloadBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'none';
         }
 
-        function stopDownload() {
-            downloadShouldStop = true;
-            document.getElementById('stopDownloadBtn').disabled = true;
+        function stopProcessing() {
+            shouldStopProcessing = true;
+            document.getElementById('stopBtn').disabled = true;
         }
 
         function buildOutputSegments() {
@@ -1282,12 +1627,10 @@
                     block.cutPoints.forEach(y => {
                         allCutPoints.push(currentY + y);
                     });
-                    
                     currentY += block.height;
                 });
                 
                 allCutPoints.sort((a, b) => a - b);
-                
                 const points = [0, ...allCutPoints, currentY];
                 
                 for (let j = 0; j < points.length - 1; j++) {
@@ -1304,7 +1647,7 @@
             return segments;
         }
 
-        async function downloadSegment(segment, filename) {
+        async function processSegment(segment, filename) {
             const { blocks, startY, endY } = segment;
             
             let width = targetWidthValue;
@@ -1317,12 +1660,9 @@
             
             blocks.forEach(block => {
                 block.cropRegions.forEach(region => {
-                    const regionStart = region.startY;
-                    const regionEnd = region.endY;
-                    
-                    if (regionEnd > startY && regionStart < endY) {
-                        const overlapStart = Math.max(regionStart, startY);
-                        const overlapEnd = Math.min(regionEnd, endY);
+                    if (region.endY > startY && region.startY < endY) {
+                        const overlapStart = Math.max(region.startY, startY);
+                        const overlapEnd = Math.min(region.endY, endY);
                         totalHeight -= (overlapEnd - overlapStart);
                     }
                 });
@@ -1369,13 +1709,7 @@
                         
                         if (drawHeight > 0) {
                             const destHeight = Math.round(drawHeight * blockScale);
-                            
-                            ctx.drawImage(
-                                img,
-                                0, currentSrcY, block.width, drawHeight,
-                                0, destY, width, destHeight
-                            );
-                            
+                            ctx.drawImage(img, 0, currentSrcY, block.width, drawHeight, 0, destY, width, destHeight);
                             destY += destHeight;
                         }
                         
@@ -1393,16 +1727,10 @@
                 }
             }
 
-            const blob = await new Promise(resolve => {
-                canvas.toBlob(resolve, 'image/jpeg', 1.0);
-            });
-
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(url);
+
+            return { filename, url, blob };
         }
 
         function loadImageFromUrl(url) {
@@ -1414,14 +1742,96 @@
             });
         }
 
+        // ==================== DOWNLOAD RESULT ====================
+        function showDownloadResult(images) {
+            const modal = document.getElementById('downloadResultModal');
+            const container = document.getElementById('downloadResultImages');
+            
+            container.innerHTML = '';
+            
+            images.forEach((img, idx) => {
+                const item = document.createElement('div');
+                item.className = 'download-result-item';
+                
+                const imgEl = document.createElement('img');
+                imgEl.src = img.url;
+                imgEl.onclick = () => downloadSingleImage(img.blob, img.filename);
+                
+                const name = document.createElement('div');
+                name.className = 'download-result-item-name';
+                name.textContent = img.filename;
+                
+                item.appendChild(imgEl);
+                item.appendChild(name);
+                container.appendChild(item);
+            });
+            
+            modal.classList.add('visible');
+        }
+
+        function closeDownloadResult() {
+            document.getElementById('downloadResultModal').classList.remove('visible');
+            // Clean up URLs
+            processedImages.forEach(img => URL.revokeObjectURL(img.url));
+            processedImages = [];
+        }
+
+        function downloadSingleImage(blob, filename) {
+            if (canDownloadDirectly) {
+                // Android/Desktop: Direct download
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                // iOS: Open in new tab (user can long-press to save)
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+            }
+        }
+
         // ==================== ZOOM ====================
         function setupZoomControls() {
-            document.getElementById('canvasArea').addEventListener('wheel', (e) => {
-                if (e.ctrlKey) {
+            const canvasArea = document.getElementById('canvasArea');
+            
+            if (!isMobile) {
+                canvasArea.addEventListener('wheel', (e) => {
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        e.deltaY < 0 ? zoomIn() : zoomOut();
+                    }
+                }, { passive: false });
+            }
+
+            // Pinch zoom for mobile
+            let initialDistance = 0;
+            let initialZoom = 1;
+            
+            canvasArea.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    initialDistance = getDistance(e.touches[0], e.touches[1]);
+                    initialZoom = currentZoom;
+                }
+            });
+
+            canvasArea.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
                     e.preventDefault();
-                    e.deltaY < 0 ? zoomIn() : zoomOut();
+                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                    const scale = currentDistance / initialDistance;
+                    currentZoom = Math.min(Math.max(initialZoom * scale, 0.3), 5);
+                    applyZoom();
                 }
             }, { passive: false });
+        }
+
+        function getDistance(touch1, touch2) {
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
         }
 
         function zoomIn() {
@@ -1448,7 +1858,8 @@
         // ==================== CONFIG ====================
         function exportConfig() {
             const config = {
-                version: 6,
+                version: 8,
+                platform: { isIOS, isAndroid, isMobile },
                 targetWidth: targetWidthValue,
                 outputPrefix: document.getElementById('outputPrefix').value,
                 downloadThreads: parseInt(document.getElementById('downloadThreads').value),
@@ -1481,7 +1892,6 @@
 
             try {
                 const config = JSON.parse(await file.text());
-                
                 document.getElementById('targetWidth').value = config.targetWidth;
                 document.getElementById('targetWidthInput').value = config.targetWidth;
                 document.getElementById('outputPrefix').value = config.outputPrefix;
@@ -1517,6 +1927,8 @@
         }
 
         function clearAll() {
+            if (!confirm('Xóa tất cả ảnh?')) return;
+            
             imageBlocks.forEach(b => {
                 if (b.url) URL.revokeObjectURL(b.url);
             });
@@ -1524,6 +1936,7 @@
             imageBlocks = [];
             mergeStates = [];
             renderAll();
+            closeSidebar();
         }
 
         function showProgress(show, text = '') {
