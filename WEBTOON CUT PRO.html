@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webtoon Cut Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: #eee;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #111;
+            padding: 15px 20px;
+            border-bottom: 2px solid #00d4ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            color: #00d4ff;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: #111;
+            border-right: 2px solid #222;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .section {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 3px solid #00d4ff;
+        }
+        
+        .section h3 {
+            color: #00d4ff;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .input-group {
+            margin-bottom: 12px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="range"] {
+            padding: 8px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 13px;
+            width: 100%;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        input[type="number"] {
+            width: 80px;
+        }
+        
+        .range-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-primary { background: #00d4ff; color: #000; }
+        .btn-success { background: #00ff88; color: #000; }
+        .btn-danger { background: #ff4757; color: #fff; }
+        .btn-warning { background: #ffa502; color: #000; }
+        .btn-info { background: #5f27cd; color: #fff; }
+        
+        .mode-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .mode-btn {
+            padding: 8px;
+            background: #0a0a0a;
+            border: 2px solid #333;
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .mode-btn.active {
+            background: #00d4ff;
+            border-color: #00d4ff;
+            color: #000;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            overflow: auto;
+            background: #0a0a0a;
+            position: relative;
+        }
+        
+        .canvas-area.drag-over {
+            background: rgba(0, 212, 255, 0.1);
+            outline: 5px dashed #00d4ff;
+            outline-offset: -10px;
+        }
+        
+        .canvas-viewport {
+            min-height: 100%;
+            padding: 20px;
+            transform-origin: top left;
+            transition: transform 0.2s ease-out;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #333;
+        }
+        
+        .empty-state-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        
+        .image-block {
+            background: #000;
+            overflow: hidden;
+            margin-bottom: 0;
+            border: none;
+            position: relative;
+        }
+        
+        .image-content {
+            position: relative;
+            background: #000;
+            line-height: 0;
+        }
+        
+        .image-chunk {
+            display: block;
+            width: 100%;
+            pointer-events: all;
+            cursor: crosshair;
+            -webkit-user-select: none;
+            user-select: none;
+            vertical-align: bottom;
+        }
+        
+        .merge-divider {
+            position: relative;
+            padding: 15px 0;
+            text-align: center;
+            display: block;
+        }
+        
+        .merge-btn-inline {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .merge-btn-inline:hover {
+            background: #00ff88;
+            transform: scale(1.05);
+        }
+        
+        .merge-line-container {
+            position: relative;
+            height: 1px;
+            background: #00ff88;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .merge-line-container.visible {
+            display: flex;
+        }
+        
+        .unmerge-btn {
+            position: absolute;
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        
+        .unmerge-btn:hover {
+            background: #00d4ff;
+        }
+        
+        .cut-line-overlay {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        
+        .cut-line-container {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 30px;
+            margin-top: -15px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            cursor: ns-resize;
+            pointer-events: all;
+        }
+        
+        .cut-line {
+            flex: 1;
+            height: 0;
+            border-top: 3px dashed #ff1493;
+            position: relative;
+        }
+        
+        .cut-line-label {
+            position: absolute;
+            left: 50%;
+            top: -20px;
+            transform: translateX(-50%);
+            background: #ff1493;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        
+        .crop-region {
+            position: absolute;
+            left: 0;
+            right: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(255, 0, 0, 0.3),
+                rgba(255, 0, 0, 0.3) 10px,
+                rgba(200, 0, 0, 0.3) 10px,
+                rgba(200, 0, 0, 0.3) 20px
+            );
+            border-top: 3px solid #ff0000;
+            border-bottom: 3px solid #ff0000;
+            pointer-events: all;
+            z-index: 85;
+            min-height: 20px;
+        }
+        
+        .crop-drag-top,
+        .crop-drag-bottom {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 15px;
+            cursor: ns-resize;
+            z-index: 90;
+        }
+        
+        .crop-drag-top {
+            top: -7px;
+        }
+        
+        .crop-drag-bottom {
+            bottom: -7px;
+        }
+        
+        .crop-label {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ff0000;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        
+        .remove-cut-btn, .remove-crop-btn {
+            background: #ff1493;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .remove-crop-btn {
+            background: #ff0000;
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: all;
+        }
+        
+        .remove-cut-btn:hover,
+        .remove-crop-btn:hover {
+            opacity: 0.8;
+        }
+        
+        .mode-indicator {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #00d4ff;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .mode-indicator.visible {
+            display: block;
+        }
+        
+        .zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #00d4ff;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #00d4ff;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .zoom-btn:hover {
+            background: #00d4ff;
+            color: #000;
+        }
+        
+        .zoom-level {
+            color: #00d4ff;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .progress-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .progress-overlay.visible {
+            display: flex;
+        }
+        
+        .progress-box {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #00d4ff;
+            min-width: 400px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #0a0a0a;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        
+        .progress-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .image-info-tooltip {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00d4ff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .image-block:hover .image-info-tooltip {
+            opacity: 1;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✂️ WEBTOON CUT PRO</h1>
+        <div class="header-controls">
+            <button class="btn btn-primary" onclick="exportConfig()" style="width: auto; padding: 8px 15px;">💾 Config</button>
+            <button class="btn btn-warning" onclick="importConfig()" style="width: auto; padding: 8px 15px;">📂 Load</button>
+            <input type="file" id="configInput" accept=".json" style="display: none;">
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="section">
+                <h3>⚙️ Cấu Hình</h3>
+                
+                <div class="input-group">
+                    <label>Width đầu ra (px):</label>
+                    <div class="range-group">
+                        <input type="range" id="targetWidth" min="690" max="2000" value="1440" step="10">
+                        <input type="number" id="targetWidthInput" min="690" max="2000" value="1440" step="10">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Tên file output:</label>
+                    <input type="text" id="outputPrefix" value="cut_" placeholder="cut_">
+                </div>
+                
+                <div class="input-group">
+                    <label>Số luồng download (3-15):</label>
+                    <input type="number" id="downloadThreads" min="3" max="15" value="3">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🎬 Chế Độ</h3>
+                <div class="mode-toggle">
+                    <div class="mode-btn active" id="viewMode" onclick="setMode('view')">👁️ Xem</div>
+                    <div class="mode-btn" id="cutMode" onclick="setMode('cut')">✂️ Cắt</div>
+                    <div class="mode-btn" id="cropMode" onclick="setMode('crop')">🗑️ Crop</div>
+                </div>
+                
+                <div id="cutSettings" style="display: none; margin-top: 10px;">
+                    <p style="font-size: 11px; color: #666;">
+                        Click vào ảnh để đặt đường cắt<br>
+                        Kéo đường cắt để điều chỉnh (1px)
+                    </p>
+                </div>
+                
+                <div id="cropSettings" style="display: none; margin-top: 10px;">
+                    <p style="font-size: 11px; color: #666;">
+                        Click 2 lần: Y1 → Y2 để tạo vùng crop<br>
+                        Kéo viền để điều chỉnh
+                    </p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>📥 Hành Động</h3>
+                <button class="btn btn-info" onclick="mergeAll()">🔗 Ghép Tất Cả</button>
+                <button class="btn btn-warning" onclick="unmergeAll()" style="margin-top: 10px;">↔️ Bỏ Ghép Tất Cả</button>
+                <button class="btn btn-warning" onclick="clearAllCuts()" style="margin-top: 10px;">✂️ Xóa Tất Cả Cắt</button>
+                <button class="btn btn-success" onclick="downloadAll()" id="downloadBtn" style="margin-top: 10px;">💾 Tải Tất Cả JPG</button>
+                <button class="btn btn-danger" onclick="clearAll()" style="margin-top: 10px;">🗑️ Xóa Tất Cả</button>
+            </div>
+        </div>
+
+        <div class="canvas-area" id="canvasArea">
+            <div class="canvas-viewport" id="canvasViewport">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎨</div>
+                    <h2 style="color: #333;">Kéo thả ảnh vào đây</h2>
+                    <p style="color: #222;">Metadata only - Siêu nhanh</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mode-indicator" id="modeIndicator"></div>
+
+    <div class="zoom-controls" id="zoomControls">
+        <div class="zoom-btn" onclick="zoomOut()">−</div>
+        <div class="zoom-level" id="zoomLevel">100%</div>
+        <div class="zoom-btn" onclick="zoomIn()">+</div>
+        <div class="zoom-btn" onclick="resetZoom()">⟲</div>
+    </div>
+
+    <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-box">
+            <h3 style="color: #00d4ff; margin-bottom: 10px;">⏳ Đang xử lý...</h3>
+            <div class="progress-text" id="progressText">Đang chuẩn bị...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <div class="progress-actions">
+                <button class="btn btn-danger" onclick="stopDownload()" id="stopDownloadBtn" style="display: none;">⏹️ Dừng Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== STATE ====================
+        let imageBlocks = [];
+        let mergeStates = [];
+        let currentMode = 'view';
+        let currentZoom = 1.0;
+        let targetWidthValue = 1440;
+        let draggedCutLine = null;
+        let draggedCropRegion = null;
+        let cropTempPoint = null;
+        let isDownloading = false;
+        let downloadShouldStop = false;
+
+        // ==================== INIT ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            setupDragDrop();
+            setupRangeInputs();
+            setupZoomControls();
+            applyZoom();
+            
+            document.addEventListener('contextmenu', (e) => {
+                if (e.target.classList.contains('image-chunk')) {
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('dragstart', (e) => {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // ==================== DRAG & DROP ====================
+        function setupDragDrop() {
+            const canvasArea = document.getElementById('canvasArea');
+            let dragCounter = 0;
+            
+            canvasArea.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter++;
+                canvasArea.classList.add('drag-over');
+            });
+
+            canvasArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter--;
+                if (dragCounter === 0) {
+                    canvasArea.classList.remove('drag-over');
+                }
+            });
+
+            canvasArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            canvasArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter = 0;
+                canvasArea.classList.remove('drag-over');
+                
+                const files = [];
+                
+                if (e.dataTransfer.items) {
+                    for (let i = 0; i < e.dataTransfer.items.length; i++) {
+                        if (e.dataTransfer.items[i].kind === 'file') {
+                            const file = e.dataTransfer.items[i].getAsFile();
+                            if (file) files.push(file);
+                        }
+                    }
+                } else {
+                    files.push(...e.dataTransfer.files);
+                }
+                
+                const existingNames = new Set(imageBlocks.map(b => b.name));
+                const newFiles = files.filter(f => !existingNames.has(f.name));
+                
+                if (newFiles.length < files.length) {
+                    console.log(`Skipped ${files.length - newFiles.length} duplicate files`);
+                }
+                
+                if (newFiles.length > 0) {
+                    await handleFilesUpload(newFiles);
+                }
+            });
+        }
+
+        // ==================== FILE UPLOAD ====================
+        async function handleFilesUpload(files) {
+            showProgress(true, 'Đang tải ảnh...');
+            
+            const imageFiles = files.filter(f => 
+                f.type.startsWith('image/') || 
+                f.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
+            );
+
+            imageFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
+
+            const isFirstUpload = imageBlocks.length === 0;
+
+            for (let i = 0; i < imageFiles.length; i++) {
+                updateProgress((i / imageFiles.length) * 100, `Đang tải ${i + 1}/${imageFiles.length}...`);
+                
+                try {
+                    const dims = await getImageDimensions(imageFiles[i]);
+                    
+                    if (isFirstUpload && i === 0) {
+                        let autoWidth = dims.width;
+                        if (autoWidth < 690) autoWidth = 720;
+                        if (autoWidth > 2000) autoWidth = 2000;
+                        
+                        targetWidthValue = autoWidth;
+                        document.getElementById('targetWidth').value = autoWidth;
+                        document.getElementById('targetWidthInput').value = autoWidth;
+                    }
+                    
+                    imageBlocks.push({
+                        id: Date.now() + i + Math.random(),
+                        file: imageFiles[i],
+                        name: imageFiles[i].name,
+                        width: dims.width,
+                        height: dims.height,
+                        url: URL.createObjectURL(imageFiles[i]),
+                        cutPoints: [],
+                        cropRegions: []
+                    });
+                } catch (err) {
+                    console.error('Error:', imageFiles[i].name, err);
+                }
+            }
+
+            mergeStates = [];
+            for (let i = 0; i < imageBlocks.length - 1; i++) {
+                mergeStates.push({ index: i, merged: false });
+            }
+
+            updateProgress(100, 'Hoàn thành!');
+            await sleep(300);
+            showProgress(false);
+
+            renderAll();
+        }
+
+        function getImageDimensions(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    resolve({ width: img.width, height: img.height });
+                };
+                
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Failed to load'));
+                };
+                
+                img.src = url;
+            });
+        }
+
+        // ==================== RENDER ====================
+        function renderAll() {
+            const viewport = document.getElementById('canvasViewport');
+            viewport.innerHTML = '';
+
+            if (imageBlocks.length === 0) {
+                viewport.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎨</div>
+                        <h2 style="color: #333;">Kéo thả ảnh vào đây</h2>
+                        <p style="color: #222;">Metadata only - Siêu nhanh</p>
+                    </div>
+                `;
+                return;
+            }
+
+            imageBlocks.forEach((block, index) => {
+                const blockEl = createBlockElement(block, index);
+                viewport.appendChild(blockEl);
+
+                if (index < imageBlocks.length - 1) {
+                    const isMerged = mergeStates[index].merged;
+                    
+                    if (isMerged) {
+                        const mergeLine = document.createElement('div');
+                        mergeLine.className = 'merge-line-container visible';
+                        mergeLine.innerHTML = `
+                            <button class="unmerge-btn" onclick="toggleMerge(${index})">Bỏ ghép</button>
+                        `;
+                        viewport.appendChild(mergeLine);
+                    } else {
+                        const mergeDiv = document.createElement('div');
+                        mergeDiv.className = 'merge-divider';
+                        mergeDiv.innerHTML = `
+                            <button class="merge-btn-inline" onclick="toggleMerge(${index})">
+                                🔗 Ghép Ảnh
+                            </button>
+                        `;
+                        viewport.appendChild(mergeDiv);
+                    }
+                }
+            });
+        }
+
+        function createBlockElement(block, index) {
+            const div = document.createElement('div');
+            div.className = 'image-block';
+            div.id = `block-${index}`;
+            div.dataset.blockIndex = index;
+
+            const content = document.createElement('div');
+            content.className = 'image-content';
+            
+            const img = document.createElement('img');
+            img.className = 'image-chunk';
+            img.src = block.url;
+            img.dataset.blockIndex = index;
+            img.onclick = (e) => handleImageClick(e, block, index);
+            img.draggable = false;
+            
+            img.onload = () => {
+                renderAllOverlays(block, index, content);
+            };
+            
+            content.appendChild(img);
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'image-info-tooltip';
+            tooltip.textContent = `${String(index + 1).padStart(3, '0')}. ${block.name} | ${block.width}×${block.height}px`;
+            content.appendChild(tooltip);
+
+            const cutOverlay = document.createElement('div');
+            cutOverlay.className = 'cut-line-overlay';
+            cutOverlay.id = `cut-overlay-${index}`;
+            content.appendChild(cutOverlay);
+
+            div.appendChild(content);
+            return div;
+        }
+
+        function renderAllOverlays(block, blockIndex, container) {
+            const cutOverlay = document.getElementById(`cut-overlay-${blockIndex}`);
+            if (!cutOverlay) return;
+            
+            cutOverlay.innerHTML = '';
+            
+            const img = container.querySelector('.image-chunk');
+            if (!img || !img.offsetHeight) return;
+            
+            const scale = img.offsetHeight / block.height;
+            
+            block.cutPoints.forEach(y => {
+                const cutLine = createCutLine(block, y, blockIndex, scale);
+                cutOverlay.appendChild(cutLine);
+            });
+            
+            block.cropRegions.forEach((region, idx) => {
+                const crop = createCropRegion(block, region, blockIndex, idx, scale);
+                cutOverlay.appendChild(crop);
+            });
+        }
+
+        function createCutLine(block, y, blockIndex, scale) {
+            const container = document.createElement('div');
+            container.className = 'cut-line-container';
+            container.style.top = (y * scale) + 'px';
+            container.dataset.blockIndex = blockIndex;
+            container.dataset.cutY = y;
+            
+            container.onmousedown = (e) => {
+                if (e.target.classList.contains('remove-cut-btn')) return;
+                startDragCutLine(e, block, y, blockIndex);
+            };
+            
+            const line = document.createElement('div');
+            line.className = 'cut-line';
+            
+            const label = document.createElement('div');
+            label.className = 'cut-line-label';
+            label.textContent = `${y}px`;
+            line.appendChild(label);
+            
+            const btn = document.createElement('button');
+            btn.className = 'remove-cut-btn';
+            btn.textContent = 'Bỏ';
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                removeCutPoint(block, y);
+            };
+            
+            container.appendChild(line);
+            container.appendChild(btn);
+            
+            return container;
+        }
+
+        function createCropRegion(block, region, blockIndex, regionIdx, scale) {
+            const container = document.createElement('div');
+            container.className = 'crop-region';
+            container.style.top = (region.startY * scale) + 'px';
+            container.style.height = ((region.endY - region.startY) * scale) + 'px';
+            
+            const label = document.createElement('div');
+            label.className = 'crop-label';
+            label.textContent = `${region.startY}-${region.endY}px`;
+            container.appendChild(label);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-crop-btn';
+            removeBtn.textContent = 'Bỏ';
+            removeBtn.onclick = () => removeCropRegion(blockIndex, regionIdx);
+            container.appendChild(removeBtn);
+            
+            const topDrag = document.createElement('div');
+            topDrag.className = 'crop-drag-top';
+            topDrag.onmousedown = (e) => {
+                e.stopPropagation();
+                startDragCropEdge(e, block, region, blockIndex, regionIdx, 'top', scale);
+            };
+            container.appendChild(topDrag);
+            
+            const bottomDrag = document.createElement('div');
+            bottomDrag.className = 'crop-drag-bottom';
+            bottomDrag.onmousedown = (e) => {
+                e.stopPropagation();
+                startDragCropEdge(e, block, region, blockIndex, regionIdx, 'bottom', scale);
+            };
+            container.appendChild(bottomDrag);
+            
+            return container;
+        }
+
+        function handleImageClick(e, block, blockIndex) {
+            const img = e.target;
+            const rect = img.getBoundingClientRect();
+            
+            const clickY = e.clientY - rect.top;
+            const displayHeight = rect.height;
+            const originalHeight = block.height;
+            const scale = displayHeight / originalHeight;
+            const actualY = Math.round(clickY / scale);
+
+            if (actualY <= 0 || actualY >= block.height) return;
+
+            if (currentMode === 'cut') {
+                if (!block.cutPoints.includes(actualY)) {
+                    block.cutPoints.push(actualY);
+                    block.cutPoints.sort((a, b) => a - b);
+                    const content = img.closest('.image-content');
+                    renderAllOverlays(block, blockIndex, content);
+                }
+            } else if (currentMode === 'crop') {
+                if (!cropTempPoint) {
+                    cropTempPoint = { blockIndex, y: actualY };
+                    showModeIndicator(`🗑️ Crop: Y1 = ${actualY}px<br>Click Y2 →`);
+                } else if (cropTempPoint.blockIndex === blockIndex) {
+                    const startY = Math.min(cropTempPoint.y, actualY);
+                    const endY = Math.max(cropTempPoint.y, actualY);
+                    block.cropRegions.push({ startY, endY });
+                    cropTempPoint = null;
+                    hideModeIndicator();
+                    const content = img.closest('.image-content');
+                    renderAllOverlays(block, blockIndex, content);
+                }
+            }
+        }
+
+        function removeCutPoint(block, y) {
+            const index = block.cutPoints.indexOf(y);
+            if (index > -1) {
+                block.cutPoints.splice(index, 1);
+                const blockIndex = imageBlocks.findIndex(b => b.id === block.id);
+                if (blockIndex > -1) {
+                    const blockEl = document.getElementById(`block-${blockIndex}`);
+                    if (blockEl) {
+                        const content = blockEl.querySelector('.image-content');
+                        renderAllOverlays(block, blockIndex, content);
+                    }
+                }
+            }
+        }
+
+        function removeCropRegion(blockIndex, regionIdx) {
+            const block = imageBlocks[blockIndex];
+            block.cropRegions.splice(regionIdx, 1);
+            const blockEl = document.getElementById(`block-${blockIndex}`);
+            if (blockEl) {
+                const content = blockEl.querySelector('.image-content');
+                renderAllOverlays(block, blockIndex, content);
+            }
+        }
+
+        // ==================== DRAG CUT LINE ====================
+        function startDragCutLine(e, block, oldY, blockIndex) {
+            e.preventDefault();
+            
+            const blockEl = document.getElementById(`block-${blockIndex}`);
+            const img = blockEl.querySelector('.image-chunk');
+            const rect = img.getBoundingClientRect();
+            const scale = rect.height / block.height;
+            
+            draggedCutLine = { block, oldY, blockIndex, rect, scale, img };
+            
+            const lineContainer = e.currentTarget;
+            
+            document.onmousemove = (e) => {
+                if (!draggedCutLine) return;
+                
+                const mouseY = e.clientY - draggedCutLine.rect.top;
+                let actualY = Math.round(mouseY / draggedCutLine.scale);
+                
+                if (actualY < 1) actualY = 1;
+                if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
+                
+                lineContainer.style.top = (actualY * draggedCutLine.scale) + 'px';
+                
+                const label = lineContainer.querySelector('.cut-line-label');
+                if (label) label.textContent = `${actualY}px`;
+            };
+            
+            document.onmouseup = (e) => {
+                if (!draggedCutLine) return;
+                
+                const mouseY = e.clientY - draggedCutLine.rect.top;
+                let actualY = Math.round(mouseY / draggedCutLine.scale);
+                
+                if (actualY < 1) actualY = 1;
+                if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
+                
+                if (actualY !== draggedCutLine.oldY) {
+                    const oldIndex = draggedCutLine.block.cutPoints.indexOf(draggedCutLine.oldY);
+                    if (oldIndex > -1) {
+                        draggedCutLine.block.cutPoints.splice(oldIndex, 1);
+                    }
+                    
+                    if (!draggedCutLine.block.cutPoints.includes(actualY)) {
+                        draggedCutLine.block.cutPoints.push(actualY);
+                        draggedCutLine.block.cutPoints.sort((a, b) => a - b);
+                    }
+                    
+                    const content = draggedCutLine.img.closest('.image-content');
+                    renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
+                }
+                
+                draggedCutLine = null;
+                document.onmousemove = null;
+                document.onmouseup = null;
+            };
+        }
+
+        // ==================== DRAG CROP EDGE ====================
+        function startDragCropEdge(e, block, region, blockIndex, regionIdx, edge, scale) {
+            e.preventDefault();
+            
+            const blockEl = document.getElementById(`block-${blockIndex}`);
+            const img = blockEl.querySelector('.image-chunk');
+            const rect = img.getBoundingClientRect();
+            const currentScale = rect.height / block.height;
+            
+            draggedCropRegion = { block, region, blockIndex, regionIdx, edge, rect, scale: currentScale, img };
+            
+            document.onmousemove = (e) => {
+                if (!draggedCropRegion) return;
+                
+                const mouseY = e.clientY - draggedCropRegion.rect.top;
+                let actualY = Math.round(mouseY / draggedCropRegion.scale);
+                
+                if (actualY < 0) actualY = 0;
+                if (actualY >= draggedCropRegion.block.height) actualY = draggedCropRegion.block.height;
+                
+                if (draggedCropRegion.edge === 'top') {
+                    if (actualY < draggedCropRegion.region.endY - 10) {
+                        draggedCropRegion.region.startY = actualY;
+                    }
+                } else {
+                    if (actualY > draggedCropRegion.region.startY + 10) {
+                        draggedCropRegion.region.endY = actualY;
+                    }
+                }
+                
+                const content = draggedCropRegion.img.closest('.image-content');
+                renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
+            };
+            
+            document.onmouseup = () => {
+                draggedCropRegion = null;
+                document.onmousemove = null;
+                document.onmouseup = null;
+            };
+        }
+
+        // ==================== MODE ====================
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('viewMode').classList.toggle('active', mode === 'view');
+            document.getElementById('cutMode').classList.toggle('active', mode === 'cut');
+            document.getElementById('cropMode').classList.toggle('active', mode === 'crop');
+            
+            document.getElementById('cutSettings').style.display = mode === 'cut' ? 'block' : 'none';
+            document.getElementById('cropSettings').style.display = mode === 'crop' ? 'block' : 'none';
+            
+            cropTempPoint = null;
+            hideModeIndicator();
+        }
+
+        function showModeIndicator(text) {
+            const indicator = document.getElementById('modeIndicator');
+            indicator.innerHTML = text;
+            indicator.classList.add('visible');
+        }
+
+        function hideModeIndicator() {
+            document.getElementById('modeIndicator').classList.remove('visible');
+        }
+
+        // ==================== MERGE ====================
+        function toggleMerge(index) {
+            mergeStates[index].merged = !mergeStates[index].merged;
+            renderAll();
+        }
+
+        function mergeAll() {
+            mergeStates.forEach(state => { state.merged = true; });
+            renderAll();
+        }
+
+        function unmergeAll() {
+            mergeStates.forEach(state => { state.merged = false; });
+            renderAll();
+        }
+
+        function clearAllCuts() {
+            imageBlocks.forEach(b => {
+                b.cutPoints = [];
+                b.cropRegions = [];
+            });
+            renderAll();
+        }
+
+        // ==================== DOWNLOAD ====================
+        async function downloadAll() {
+            if (imageBlocks.length === 0) return;
+            if (isDownloading) return;
+
+            isDownloading = true;
+            downloadShouldStop = false;
+            
+            document.getElementById('downloadBtn').disabled = true;
+            document.getElementById('stopDownloadBtn').style.display = 'block';
+
+            showProgress(true, 'Đang phân tích...');
+
+            const segments = buildOutputSegments();
+            
+            updateProgress(0, `Tìm thấy ${segments.length} file...`);
+
+            const prefix = document.getElementById('outputPrefix').value || 'cut_';
+            const threads = parseInt(document.getElementById('downloadThreads').value) || 3;
+
+            let completed = 0;
+            let failed = 0;
+
+            const downloadQueue = segments.map((seg, idx) => ({
+                segment: seg,
+                filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
+                index: idx
+            }));
+
+            const downloadWorker = async (queue) => {
+                while (queue.length > 0 && !downloadShouldStop) {
+                    const task = queue.shift();
+                    if (!task) break;
+
+                    try {
+                        await downloadSegment(task.segment, task.filename);
+                        completed++;
+                    } catch (err) {
+                        console.error('Download error:', task.filename, err);
+                        failed++;
+                    }
+
+                    const total = segments.length;
+                    const percent = (completed + failed) / total * 100;
+                    updateProgress(percent, `Đã tải: ${completed}/${total} | Lỗi: ${failed} | Luồng: ${threads}`);
+                }
+            };
+
+            const workers = [];
+            for (let i = 0; i < threads; i++) {
+                workers.push(downloadWorker(downloadQueue));
+            }
+
+            await Promise.all(workers);
+
+            if (downloadShouldStop) {
+                updateProgress(100, `Đã dừng! Tải được: ${completed}/${segments.length}`);
+            } else {
+                updateProgress(100, `Hoàn thành! ${completed}/${segments.length} files`);
+            }
+
+            await sleep(2000);
+            showProgress(false);
+            
+            isDownloading = false;
+            downloadShouldStop = false;
+            document.getElementById('downloadBtn').disabled = false;
+            document.getElementById('stopDownloadBtn').style.display = 'none';
+        }
+
+        function stopDownload() {
+            downloadShouldStop = true;
+            document.getElementById('stopDownloadBtn').disabled = true;
+        }
+
+        function buildOutputSegments() {
+            const segments = [];
+            
+            let i = 0;
+            while (i < imageBlocks.length) {
+                let groupEnd = i;
+                while (groupEnd < imageBlocks.length - 1 && mergeStates[groupEnd].merged) {
+                    groupEnd++;
+                }
+                
+                const blocksInGroup = imageBlocks.slice(i, groupEnd + 1);
+                
+                const allCutPoints = [];
+                let currentY = 0;
+                
+                blocksInGroup.forEach(block => {
+                    block.cutPoints.forEach(y => {
+                        allCutPoints.push(currentY + y);
+                    });
+                    
+                    currentY += block.height;
+                });
+                
+                allCutPoints.sort((a, b) => a - b);
+                
+                const points = [0, ...allCutPoints, currentY];
+                
+                for (let j = 0; j < points.length - 1; j++) {
+                    segments.push({
+                        blocks: blocksInGroup,
+                        startY: points[j],
+                        endY: points[j + 1]
+                    });
+                }
+                
+                i = groupEnd + 1;
+            }
+            
+            return segments;
+        }
+
+        async function downloadSegment(segment, filename) {
+            const { blocks, startY, endY } = segment;
+            
+            let width = targetWidthValue;
+            const maxOriginalWidth = Math.max(...blocks.map(b => b.width));
+            if (maxOriginalWidth < 690) width = 720;
+            
+            const scale = width / maxOriginalWidth;
+            
+            let totalHeight = endY - startY;
+            
+            blocks.forEach(block => {
+                block.cropRegions.forEach(region => {
+                    const regionStart = region.startY;
+                    const regionEnd = region.endY;
+                    
+                    if (regionEnd > startY && regionStart < endY) {
+                        const overlapStart = Math.max(regionStart, startY);
+                        const overlapEnd = Math.min(regionEnd, endY);
+                        totalHeight -= (overlapEnd - overlapStart);
+                    }
+                });
+            });
+            
+            const height = Math.round(totalHeight * scale);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            let destY = 0;
+            let remainingStartY = startY;
+            let remainingHeight = endY - startY;
+
+            for (let block of blocks) {
+                if (remainingHeight <= 0) break;
+
+                const img = await loadImageFromUrl(block.url);
+                const blockScale = width / block.width;
+
+                if (remainingStartY < block.height) {
+                    const srcY = remainingStartY;
+                    const srcHeight = Math.min(block.height - srcY, remainingHeight);
+                    
+                    let currentSrcY = srcY;
+                    const srcEndY = srcY + srcHeight;
+                    
+                    while (currentSrcY < srcEndY) {
+                        let nextCropStart = srcEndY;
+                        let cropEnd = srcEndY;
+                        
+                        for (let region of block.cropRegions) {
+                            if (region.startY > currentSrcY && region.startY < nextCropStart) {
+                                nextCropStart = region.startY;
+                                cropEnd = region.endY;
+                            }
+                        }
+                        
+                        const drawHeight = Math.min(nextCropStart - currentSrcY, srcEndY - currentSrcY);
+                        
+                        if (drawHeight > 0) {
+                            const destHeight = Math.round(drawHeight * blockScale);
+                            
+                            ctx.drawImage(
+                                img,
+                                0, currentSrcY, block.width, drawHeight,
+                                0, destY, width, destHeight
+                            );
+                            
+                            destY += destHeight;
+                        }
+                        
+                        if (nextCropStart < srcEndY && cropEnd > nextCropStart) {
+                            currentSrcY = cropEnd;
+                        } else {
+                            currentSrcY += drawHeight;
+                        }
+                    }
+
+                    remainingHeight -= srcHeight;
+                    remainingStartY = 0;
+                } else {
+                    remainingStartY -= block.height;
+                }
+            }
+
+            const blob = await new Promise(resolve => {
+                canvas.toBlob(resolve, 'image/jpeg', 1.0);
+            });
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function loadImageFromUrl(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = url;
+            });
+        }
+
+        // ==================== ZOOM ====================
+        function setupZoomControls() {
+            document.getElementById('canvasArea').addEventListener('wheel', (e) => {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    e.deltaY < 0 ? zoomIn() : zoomOut();
+                }
+            }, { passive: false });
+        }
+
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom * 1.2, 5);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom / 1.2, 0.3);
+            applyZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1.0;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            document.getElementById('canvasViewport').style.transform = `scale(${currentZoom})`;
+            const displayPercent = Math.round(currentZoom * 100);
+            document.getElementById('zoomLevel').textContent = displayPercent + '%';
+        }
+
+        // ==================== CONFIG ====================
+        function exportConfig() {
+            const config = {
+                version: 6,
+                targetWidth: targetWidthValue,
+                outputPrefix: document.getElementById('outputPrefix').value,
+                downloadThreads: parseInt(document.getElementById('downloadThreads').value),
+                blocks: imageBlocks.map(b => ({
+                    name: b.name,
+                    width: b.width,
+                    height: b.height,
+                    cutPoints: b.cutPoints,
+                    cropRegions: b.cropRegions
+                })),
+                mergeStates: mergeStates
+            };
+
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'webtoon_config.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importConfig() {
+            document.getElementById('configInput').click();
+        }
+
+        document.getElementById('configInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const config = JSON.parse(await file.text());
+                
+                document.getElementById('targetWidth').value = config.targetWidth;
+                document.getElementById('targetWidthInput').value = config.targetWidth;
+                document.getElementById('outputPrefix').value = config.outputPrefix;
+                if (config.downloadThreads) {
+                    document.getElementById('downloadThreads').value = config.downloadThreads;
+                }
+                targetWidthValue = config.targetWidth;
+            } catch (err) {
+                console.error('Config load error:', err);
+            }
+
+            e.target.value = '';
+        });
+
+        // ==================== UTILS ====================
+        function setupRangeInputs() {
+            const slider = document.getElementById('targetWidth');
+            const input = document.getElementById('targetWidthInput');
+            
+            slider.addEventListener('input', (e) => {
+                targetWidthValue = parseInt(e.target.value);
+                input.value = targetWidthValue;
+            });
+            
+            input.addEventListener('input', (e) => {
+                let val = parseInt(e.target.value);
+                if (val < 690) val = 690;
+                if (val > 2000) val = 2000;
+                targetWidthValue = val;
+                slider.value = val;
+                input.value = val;
+            });
+        }
+
+        function clearAll() {
+            imageBlocks.forEach(b => {
+                if (b.url) URL.revokeObjectURL(b.url);
+            });
+            
+            imageBlocks = [];
+            mergeStates = [];
+            renderAll();
+        }
+
+        function showProgress(show, text = '') {
+            document.getElementById('progressOverlay').classList.toggle('visible', show);
+            if (text) document.getElementById('progressText').textContent = text;
+        }
+
+        function updateProgress(percent, text) {
+            const fill = document.getElementById('progressFill');
+            fill.style.width = percent + '%';
+            fill.textContent = Math.round(percent) + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
