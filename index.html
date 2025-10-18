@@ -196,14 +196,29 @@
             gap: 10px;
         }
         
-        .quality-fixed {
-            background: #00ff88;
-            color: #000;
-            font-weight: bold;
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             padding: 10px;
+            background: #0a0a0a;
             border-radius: 6px;
-            text-align: center;
-            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .checkbox-group label {
+            cursor: pointer;
+            margin: 0;
+            flex: 1;
+            font-size: 12px;
         }
         
         .btn {
@@ -537,6 +552,35 @@
             display: block;
         }
         
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: #00ff88;
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: 2px solid #00ff88;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .toast.visible {
+            opacity: 1;
+        }
+        
+        .toast.error {
+            color: #ff4757;
+            border-color: #ff4757;
+        }
+        
         .zoom-controls {
             position: fixed;
             bottom: 20px;
@@ -749,8 +793,8 @@
                 <div class="input-group">
                     <label>Width đầu ra (px):</label>
                     <div class="range-group">
-                        <input type="range" id="targetWidth" min="720" max="2000" value="1440" step="10">
-                        <input type="number" id="targetWidthInput" min="720" max="2000" value="1440" step="10">
+                        <input type="range" id="targetWidth" min="720" max="10000" value="1440" step="10">
+                        <input type="number" id="targetWidthInput" min="720" max="10000" value="1440" step="10">
                     </div>
                 </div>
 
@@ -758,10 +802,15 @@
                     <label>Tên file output:</label>
                     <input type="text" id="outputPrefix" value="cut_" placeholder="cut_">
                 </div>
-                
+
                 <div class="input-group">
-                    <label>Chất lượng JPEG:</label>
-                    <div class="quality-fixed">🔥 100% (MAXIMUM)</div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="sharpenCheck" onchange="toggleSharpen()">
+                        <label for="sharpenCheck">✨ Sharpen khi upscale (PDF)</label>
+                    </div>
+                    <p style="font-size: 10px; color: #555; margin-top: 5px; padding-left: 10px;">
+                        Làm nét nhẹ khi phóng to ảnh
+                    </p>
                 </div>
             </div>
 
@@ -820,6 +869,7 @@
     </div>
 
     <div class="mode-indicator" id="modeIndicator"></div>
+    <div class="toast" id="toast"></div>
 
     <div class="zoom-controls" id="zoomControls">
         <div class="zoom-btn" onclick="zoomOut()">−</div>
@@ -855,12 +905,74 @@
         let currentMode = 'view';
         let currentZoom = 1.0;
         let targetWidthValue = 1440;
-        let jpegQualityValue = 1.0; // 💯 100% quality
+        let jpegQualityValue = 1.0;
+        let enableSharpen = false;
         let draggedCutLine = null;
         let draggedCropRegion = null;
         let cropTempPoint = null;
         let isProcessing = false;
         let shouldStop = false;
+
+        // ==================== TOAST ====================
+        function showToast(message, isError = false, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.toggle('error', isError);
+            toast.classList.add('visible');
+            
+            setTimeout(() => {
+                toast.classList.remove('visible');
+            }, duration);
+        }
+
+        // ==================== SHARPEN ====================
+        function toggleSharpen() {
+            enableSharpen = document.getElementById('sharpenCheck').checked;
+            console.log('Sharpen:', enableSharpen);
+        }
+
+        function applySharpenFilter(canvas, ctx, originalWidth, scaledWidth) {
+            // Chỉ sharpen khi upscale
+            if (scaledWidth <= originalWidth) return;
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Sharpen kernel nhẹ (intensity ~30%)
+            const kernel = [
+                0, -0.25, 0,
+                -0.25, 2, -0.25,
+                0, -0.25, 0
+            ];
+            
+            const output = new Uint8ClampedArray(pixels);
+            
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    for (let c = 0; c < 3; c++) { // RGB only (skip alpha)
+                        let sum = 0;
+                        
+                        // Apply kernel
+                        sum += pixels[((y - 1) * width + (x - 1)) * 4 + c] * kernel[0];
+                        sum += pixels[((y - 1) * width + x) * 4 + c] * kernel[1];
+                        sum += pixels[((y - 1) * width + (x + 1)) * 4 + c] * kernel[2];
+                        sum += pixels[(y * width + (x - 1)) * 4 + c] * kernel[3];
+                        sum += pixels[(y * width + x) * 4 + c] * kernel[4];
+                        sum += pixels[(y * width + (x + 1)) * 4 + c] * kernel[5];
+                        sum += pixels[((y + 1) * width + (x - 1)) * 4 + c] * kernel[6];
+                        sum += pixels[((y + 1) * width + x) * 4 + c] * kernel[7];
+                        sum += pixels[((y + 1) * width + (x + 1)) * 4 + c] * kernel[8];
+                        
+                        output[(y * width + x) * 4 + c] = sum;
+                    }
+                }
+            }
+            
+            imageData.data.set(output);
+            ctx.putImageData(imageData, 0, 0);
+        }
 
         // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', () => {
@@ -989,7 +1101,7 @@
                     if (isFirstUpload && i === 0) {
                         let autoWidth = dims.width;
                         if (autoWidth < 720) autoWidth = 720;
-                        if (autoWidth > 2000) autoWidth = 2000;
+                        if (autoWidth > 10000) autoWidth = 10000;
                         
                         targetWidthValue = autoWidth;
                         document.getElementById('targetWidth').value = autoWidth;
@@ -1229,8 +1341,8 @@
             const img = e.target;
             const rect = img.getBoundingClientRect();
             
-            const clickY = e.clientY - rect.top;
-            const displayHeight = rect.height;
+            const clickY = (e.clientY - rect.top) / currentZoom;
+            const displayHeight = rect.height / currentZoom;
             const originalHeight = block.height;
             const scale = displayHeight / originalHeight;
             const actualY = Math.round(clickY / scale);
@@ -1304,7 +1416,7 @@
             if (draggedCutLine) {
                 e.preventDefault();
                 const touch = e.touches[0];
-                const mouseY = touch.clientY - draggedCutLine.rect.top;
+                const mouseY = (touch.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
                 let actualY = Math.round(mouseY / draggedCutLine.scale);
                 
                 if (actualY < 1) actualY = 1;
@@ -1319,7 +1431,7 @@
             } else if (draggedCropRegion) {
                 e.preventDefault();
                 const touch = e.touches[0];
-                const mouseY = touch.clientY - draggedCropRegion.rect.top;
+                const mouseY = (touch.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
                 let actualY = Math.round(mouseY / draggedCropRegion.scale);
                 
                 if (actualY < 0) actualY = 0;
@@ -1343,7 +1455,7 @@
         function handleTouchEnd(e) {
             if (draggedCutLine) {
                 const touch = e.changedTouches[0];
-                const mouseY = touch.clientY - draggedCutLine.rect.top;
+                const mouseY = (touch.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
                 let actualY = Math.round(mouseY / draggedCutLine.scale);
                 
                 if (actualY < 1) actualY = 1;
@@ -1374,14 +1486,22 @@
             const blockEl = document.getElementById(`block-${blockIndex}`);
             const img = blockEl.querySelector('.image-chunk');
             const rect = img.getBoundingClientRect();
-            const scale = rect.height / block.height;
+            const scale = (rect.height / currentZoom) / block.height;
             
-            draggedCutLine = { block, oldY, blockIndex, rect, scale, img };
+            draggedCutLine = { 
+                block, 
+                oldY, 
+                blockIndex, 
+                rect, 
+                scale, 
+                img,
+                zoom: currentZoom
+            };
             
             if (!isMobile) {
                 document.onmousemove = (e) => {
                     if (!draggedCutLine) return;
-                    const mouseY = e.clientY - draggedCutLine.rect.top;
+                    const mouseY = (e.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
                     let actualY = Math.round(mouseY / draggedCutLine.scale);
                     if (actualY < 1) actualY = 1;
                     if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
@@ -1395,7 +1515,7 @@
                 
                 document.onmouseup = (e) => {
                     if (!draggedCutLine) return;
-                    const mouseY = e.clientY - draggedCutLine.rect.top;
+                    const mouseY = (e.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
                     let actualY = Math.round(mouseY / draggedCutLine.scale);
                     if (actualY < 1) actualY = 1;
                     if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
@@ -1420,14 +1540,24 @@
             const blockEl = document.getElementById(`block-${blockIndex}`);
             const img = blockEl.querySelector('.image-chunk');
             const rect = img.getBoundingClientRect();
-            const currentScale = rect.height / block.height;
+            const currentScale = (rect.height / currentZoom) / block.height;
             
-            draggedCropRegion = { block, region, blockIndex, regionIdx, edge, rect, scale: currentScale, img };
+            draggedCropRegion = { 
+                block, 
+                region, 
+                blockIndex, 
+                regionIdx, 
+                edge, 
+                rect, 
+                scale: currentScale, 
+                img,
+                zoom: currentZoom
+            };
             
             if (!isMobile) {
                 document.onmousemove = (e) => {
                     if (!draggedCropRegion) return;
-                    const mouseY = e.clientY - draggedCropRegion.rect.top;
+                    const mouseY = (e.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
                     let actualY = Math.round(mouseY / draggedCropRegion.scale);
                     if (actualY < 0) actualY = 0;
                     if (actualY >= draggedCropRegion.block.height) actualY = draggedCropRegion.block.height;
@@ -1537,22 +1667,56 @@
             return segments;
         }
 
-        // ==================== PROCESS SEGMENT (UPDATED) ====================
+        // ==================== CHECK IF NEED PROCESSING ====================
+        function needsProcessing(segment) {
+            // Có cắt → cần process
+            if (segment.blocks.length !== 1) return true;
+            
+            const block = segment.blocks[0];
+            
+            // Có cut points → cần process
+            if (block.cutPoints.length > 0) return true;
+            
+            // Có crop → cần process
+            if (block.cropRegions.length > 0) return true;
+            
+            // Không phải toàn bộ ảnh → cần process
+            if (segment.startY !== 0 || segment.endY !== block.height) return true;
+            
+            // Có merge → cần process
+            const blockIndex = imageBlocks.indexOf(block);
+            if (blockIndex > 0 && mergeStates[blockIndex - 1].merged) return true;
+            if (blockIndex < imageBlocks.length - 1 && mergeStates[blockIndex].merged) return true;
+            
+            // Width khác gốc → cần process
+            if (targetWidthValue !== block.width) return true;
+            
+            // Không cần process → return file gốc
+            return false;
+        }
+
+        // ==================== PROCESS SEGMENT ====================
         async function processSegment(segment, forPDF = false) {
+            // Nếu không cần xử lý → trả về file gốc
+            if (!forPDF && !needsProcessing(segment)) {
+                console.log('📋 Copy file gốc:', segment.blocks[0].name);
+                return segment.blocks[0].file;
+            }
+            
+            console.log('🎨 Xử lý qua canvas:', segment.blocks.map(b => b.name).join('+'));
+            
             const { blocks, startY, endY } = segment;
             
             const maxOriginalWidth = Math.max(...blocks.map(b => b.width));
             
             let width;
             if (forPDF) {
-                // 📄 PDF: nếu ảnh < 1000px → resize lên 1000px để "soi rõ"
                 if (maxOriginalWidth < 1000) {
                     width = 1000;
                 } else {
                     width = targetWidthValue;
                 }
             } else {
-                // 💾 JPG/ZIP: giữ trong range 720-2000px
                 width = targetWidthValue;
                 if (maxOriginalWidth < 720) width = 720;
             }
@@ -1630,6 +1794,12 @@
                 }
             }
 
+            // Apply sharpen nếu bật và upscale
+            if (forPDF && enableSharpen && width > maxOriginalWidth) {
+                console.log('✨ Applying sharpen filter');
+                applySharpenFilter(canvas, ctx, maxOriginalWidth, width);
+            }
+
             return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
         }
 
@@ -1664,19 +1834,22 @@
 
             let completed = 0;
             let failed = 0;
+            let originalCount = 0;
 
             if (isIOS) {
-                console.log('🍎 iOS detected - downloading one by one');
-                
                 for (let i = 0; i < segments.length; i++) {
                     if (shouldStop) break;
 
                     const filename = `${prefix}${String(i + 1).padStart(3, '0')}.jpg`;
                     
                     try {
-                        const blob = await processSegment(segments[i], false); // JPG mode
+                        const blobOrFile = await processSegment(segments[i], false);
                         
-                        const url = URL.createObjectURL(blob);
+                        if (blobOrFile instanceof File) {
+                            originalCount++;
+                        }
+                        
+                        const url = URL.createObjectURL(blobOrFile);
                         const a = document.createElement('a');
                         a.href = url;
                         a.download = filename;
@@ -1691,11 +1864,9 @@
                     }
 
                     const percent = (completed + failed) / segments.length * 100;
-                    updateProgress(percent, `${completed}/${segments.length} | Lỗi: ${failed}`);
+                    updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
                 }
             } else {
-                console.log('💻 PC/Android - downloading in parallel');
-                
                 const queue = segments.map((seg, idx) => ({
                     segment: seg,
                     filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
@@ -1710,9 +1881,13 @@
                         if (!task) break;
 
                         try {
-                            const blob = await processSegment(task.segment, false); // JPG mode
+                            const blobOrFile = await processSegment(task.segment, false);
                             
-                            const url = URL.createObjectURL(blob);
+                            if (blobOrFile instanceof File) {
+                                originalCount++;
+                            }
+                            
+                            const url = URL.createObjectURL(blobOrFile);
                             const a = document.createElement('a');
                             a.href = url;
                             a.download = task.filename;
@@ -1727,7 +1902,7 @@
                         }
 
                         const percent = (completed + failed) / segments.length * 100;
-                        updateProgress(percent, `${completed}/${segments.length} | Lỗi: ${failed}`);
+                        updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
                     }
                 };
 
@@ -1738,9 +1913,9 @@
             showProgress(false);
             
             if (shouldStop) {
-                alert(`Đã dừng!\n\nTải được: ${completed}/${segments.length}`);
+                showToast(`⏹️ Đã dừng! Tải được: ${completed}/${segments.length}`, true);
             } else {
-                alert(`✅ Hoàn thành!\n\nTải được: ${completed}/${segments.length}\nLỗi: ${failed}`);
+                showToast(`✅ Hoàn thành! ${completed} ảnh (${originalCount} gốc)`);
             }
             
             isProcessing = false;
@@ -1772,6 +1947,7 @@
             const zip = new JSZip();
             let completed = 0;
             let failed = 0;
+            let originalCount = 0;
 
             const queue = segments.map((seg, idx) => ({
                 segment: seg,
@@ -1787,8 +1963,13 @@
                     if (!task) break;
 
                     try {
-                        const blob = await processSegment(task.segment, false); // JPG mode
-                        zip.file(task.filename, blob);
+                        const blobOrFile = await processSegment(task.segment, false);
+                        
+                        if (blobOrFile instanceof File) {
+                            originalCount++;
+                        }
+                        
+                        zip.file(task.filename, blobOrFile);
                         completed++;
                     } catch (err) {
                         console.error('Error:', task.filename, err);
@@ -1796,7 +1977,7 @@
                     }
 
                     const percent = (completed + failed) / segments.length * 100;
-                    updateProgress(percent, `${completed}/${segments.length} | Lỗi: ${failed}`);
+                    updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
                 }
             };
 
@@ -1805,7 +1986,7 @@
 
             if (shouldStop) {
                 showProgress(false);
-                alert(`Đã dừng!\n\nXử lý được: ${completed}/${segments.length}`);
+                showToast(`⏹️ Đã dừng! Xử lý được: ${completed}/${segments.length}`, true);
                 
                 isProcessing = false;
                 shouldStop = false;
@@ -1833,7 +2014,7 @@
             URL.revokeObjectURL(url);
 
             showProgress(false);
-            alert(`✅ Hoàn thành!\n\nĐã nén ${completed} ảnh vào ZIP\nLỗi: ${failed}`);
+            showToast(`✅ Đã nén ${completed} ảnh (${originalCount} gốc) vào ZIP`);
             
             isProcessing = false;
             shouldStop = false;
@@ -1843,7 +2024,7 @@
             document.getElementById('stopBtn').style.display = 'none';
         }
 
-        // ==================== DOWNLOAD PDF (UPDATED) ====================
+        // ==================== DOWNLOAD PDF ====================
         async function downloadPDF() {
             if (imageBlocks.length === 0) return;
             if (isProcessing) return;
@@ -1875,7 +2056,7 @@
                     if (!task) break;
 
                     try {
-                        const blob = await processSegment(task.segment, true); // 📄 PDF mode
+                        const blob = await processSegment(task.segment, true);
                         imageBlobs[task.index] = blob;
                         completed++;
                     } catch (err) {
@@ -1893,7 +2074,7 @@
 
             if (shouldStop) {
                 showProgress(false);
-                alert(`Đã dừng!\n\nXử lý được: ${completed}/${segments.length}`);
+                showToast(`⏹️ Đã dừng! Xử lý được: ${completed}/${segments.length}`, true);
                 
                 isProcessing = false;
                 shouldStop = false;
@@ -1948,7 +2129,7 @@
             URL.revokeObjectURL(url);
 
             showProgress(false);
-            alert(`✅ Tạo PDF thành công!\n\n${completed} ảnh đã được nén vào PDF\nLỗi: ${failed}`);
+            showToast(`✅ Tạo PDF thành công! ${completed} ảnh`);
             
             isProcessing = false;
             shouldStop = false;
@@ -2027,10 +2208,11 @@
         // ==================== CONFIG ====================
         function exportConfig() {
             const config = {
-                version: 11,
+                version: 19,
                 platform: { isIOS, isAndroid, isMobile },
                 targetWidth: targetWidthValue,
                 jpegQuality: jpegQualityValue,
+                enableSharpen: enableSharpen,
                 outputPrefix: document.getElementById('outputPrefix').value,
                 blocks: imageBlocks.map(b => ({
                     name: b.name,
@@ -2065,6 +2247,11 @@
                 document.getElementById('targetWidthInput').value = config.targetWidth;
                 document.getElementById('outputPrefix').value = config.outputPrefix;
                 targetWidthValue = config.targetWidth;
+                
+                if (config.enableSharpen !== undefined) {
+                    enableSharpen = config.enableSharpen;
+                    document.getElementById('sharpenCheck').checked = enableSharpen;
+                }
             } catch (err) {
                 console.error('Config load error:', err);
             }
@@ -2085,7 +2272,7 @@
             widthInput.addEventListener('input', (e) => {
                 let val = parseInt(e.target.value);
                 if (val < 720) val = 720;
-                if (val > 2000) val = 2000;
+                if (val > 10000) val = 10000;
                 targetWidthValue = val;
                 widthSlider.value = val;
                 widthInput.value = val;
