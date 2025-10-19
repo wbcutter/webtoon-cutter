@@ -8,6 +8,7 @@
     <title>Webtoon Cut Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/pica@9.0.1/dist/pica.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -196,6 +197,23 @@
             gap: 10px;
         }
         
+        .reset-width-btn {
+            background: #ffa502;
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            flex-shrink: 0;
+            touch-action: manipulation;
+        }
+        
+        .reset-width-btn:active {
+            transform: scale(0.95);
+        }
+        
         .checkbox-group {
             display: flex;
             align-items: center;
@@ -283,6 +301,36 @@
             position: relative;
         }
         
+        /* FIX: Scrollbar to hơn cho mobile */
+        .canvas-area::-webkit-scrollbar {
+            width: 20px;
+        }
+        
+        .canvas-area::-webkit-scrollbar-track {
+            background: #0a0a0a;
+            border-radius: 10px;
+        }
+        
+        .canvas-area::-webkit-scrollbar-thumb {
+            background: #00d4ff;
+            border-radius: 10px;
+            border: 4px solid #0a0a0a;
+        }
+        
+        .canvas-area::-webkit-scrollbar-thumb:hover {
+            background: #00ff88;
+        }
+        
+        @media (max-width: 768px) {
+            .canvas-area::-webkit-scrollbar {
+                width: 24px;
+            }
+            
+            .canvas-area::-webkit-scrollbar-thumb {
+                border: 5px solid #0a0a0a;
+            }
+        }
+        
         .canvas-area.drag-over {
             background: rgba(0, 212, 255, 0.1);
             outline: 5px dashed #00d4ff;
@@ -348,15 +396,20 @@
             line-height: 0;
         }
         
+        /* FIX: Dùng background-image thay vì img src */
         .image-chunk {
             display: block;
             width: 100%;
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: top left;
             pointer-events: all;
             cursor: crosshair;
             user-select: none;
             -webkit-user-select: none;
-            vertical-align: bottom;
+            -webkit-user-drag: none;
             touch-action: none;
+            position: relative;
         }
         
         .merge-divider {
@@ -795,7 +848,11 @@
                     <div class="range-group">
                         <input type="range" id="targetWidth" min="720" max="10000" value="1440" step="10">
                         <input type="number" id="targetWidthInput" min="720" max="10000" value="1440" step="10">
+                        <button class="reset-width-btn" onclick="resetToOriginalWidth()" title="Reset về size ảnh gốc">↺</button>
                     </div>
+                    <p style="font-size: 10px; color: #555; margin-top: 5px; padding-left: 10px;">
+                        Ảnh gốc: <span id="originalWidthLabel">--</span>px
+                    </p>
                 </div>
 
                 <div class="input-group">
@@ -912,6 +969,12 @@
         let cropTempPoint = null;
         let isProcessing = false;
         let shouldStop = false;
+        
+        // FIX 1: Lưu width ảnh gốc
+        let originalImageWidth = null;
+        
+        // FIX 6: Khởi tạo pica.js
+        let picaInstance = null;
 
         // ==================== TOAST ====================
         function showToast(message, isError = false, duration = 3000) {
@@ -932,7 +995,6 @@
         }
 
         function applySharpenFilter(canvas, ctx, originalWidth, scaledWidth) {
-            // Chỉ sharpen khi upscale
             if (scaledWidth <= originalWidth) return;
             
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -940,7 +1002,6 @@
             const width = canvas.width;
             const height = canvas.height;
             
-            // Sharpen kernel nhẹ (intensity ~30%)
             const kernel = [
                 0, -0.25, 0,
                 -0.25, 2, -0.25,
@@ -951,10 +1012,9 @@
             
             for (let y = 1; y < height - 1; y++) {
                 for (let x = 1; x < width - 1; x++) {
-                    for (let c = 0; c < 3; c++) { // RGB only (skip alpha)
+                    for (let c = 0; c < 3; c++) {
                         let sum = 0;
                         
-                        // Apply kernel
                         sum += pixels[((y - 1) * width + (x - 1)) * 4 + c] * kernel[0];
                         sum += pixels[((y - 1) * width + x) * 4 + c] * kernel[1];
                         sum += pixels[((y - 1) * width + (x + 1)) * 4 + c] * kernel[2];
@@ -976,6 +1036,14 @@
 
         // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', () => {
+            // FIX 6: Khởi tạo pica
+            if (window.pica) {
+                picaInstance = window.pica();
+                console.log('✅ Pica.js loaded (Lanczos3 resize)');
+            } else {
+                console.warn('⚠️ Pica.js không load được, fallback canvas thường');
+            }
+            
             setupDragDrop();
             setupRangeInputs();
             setupZoomControls();
@@ -988,8 +1056,9 @@
                 }
             });
             
+            // FIX 3: Chặn drag ảnh
             document.addEventListener('dragstart', (e) => {
-                if (e.target.tagName === 'IMG') {
+                if (e.target.classList.contains('image-chunk')) {
                     e.preventDefault();
                 }
             });
@@ -1083,10 +1152,24 @@
         async function handleFilesUpload(files) {
             showProgress(true, 'Đang tải ảnh...');
             
-            const imageFiles = files.filter(f => 
-                f.type.startsWith('image/') || 
-                f.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
-            );
+            // FIX 4: Chặn file blob UUID
+            const imageFiles = files.filter(f => {
+                // Chặn file có tên dạng UUID (từ blob)
+                const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (uuidPattern.test(f.name.replace(/\.[^.]+$/, ''))) {
+                    console.log('🚫 Chặn upload blob UUID:', f.name);
+                    return false;
+                }
+                
+                return f.type.startsWith('image/') || 
+                       f.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+            });
+
+            if (imageFiles.length === 0) {
+                showProgress(false);
+                showToast('⚠️ Không có ảnh hợp lệ', true);
+                return;
+            }
 
             imageFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
 
@@ -1098,7 +1181,11 @@
                 try {
                     const dims = await getImageDimensions(imageFiles[i]);
                     
+                    // FIX 1: Lưu width ảnh đầu tiên
                     if (isFirstUpload && i === 0) {
+                        originalImageWidth = dims.width;
+                        document.getElementById('originalWidthLabel').textContent = dims.width;
+                        
                         let autoWidth = dims.width;
                         if (autoWidth < 720) autoWidth = 720;
                         if (autoWidth > 10000) autoWidth = 10000;
@@ -1196,6 +1283,7 @@
             });
         }
 
+        // FIX 3: Dùng background-image thay vì <img>
         function createBlockElement(block, index) {
             const div = document.createElement('div');
             div.className = 'image-block';
@@ -1205,18 +1293,26 @@
             const content = document.createElement('div');
             content.className = 'image-content';
             
-            const img = document.createElement('img');
-            img.className = 'image-chunk';
-            img.src = block.url;
-            img.dataset.blockIndex = index;
-            img.onclick = (e) => handleImageClick(e, block, index);
-            img.draggable = false;
+            // Tạo div với background-image
+            const imgDiv = document.createElement('div');
+            imgDiv.className = 'image-chunk';
+            imgDiv.style.backgroundImage = `url("${block.url}")`;
+            imgDiv.dataset.blockIndex = index;
             
-            img.onload = () => {
+            // Tính aspect ratio
+            const aspectRatio = (block.height / block.width) * 100;
+            imgDiv.style.paddingBottom = aspectRatio + '%';
+            
+            imgDiv.onclick = (e) => handleImageClick(e, block, index);
+            
+            // Load xong thì render overlay
+            const tempImg = new Image();
+            tempImg.onload = () => {
                 renderAllOverlays(block, index, content);
             };
+            tempImg.src = block.url;
             
-            content.appendChild(img);
+            content.appendChild(imgDiv);
 
             const tooltip = document.createElement('div');
             tooltip.className = 'image-info-tooltip';
@@ -1238,10 +1334,10 @@
             
             cutOverlay.innerHTML = '';
             
-            const img = container.querySelector('.image-chunk');
-            if (!img || !img.offsetHeight) return;
+            const imgDiv = container.querySelector('.image-chunk');
+            if (!imgDiv || !imgDiv.offsetHeight) return;
             
-            const scale = img.offsetHeight / block.height;
+            const scale = imgDiv.offsetHeight / block.height;
             
             block.cutPoints.forEach(y => {
                 const cutLine = createCutLine(block, y, blockIndex, scale);
@@ -1338,8 +1434,8 @@
         }
 
         function handleImageClick(e, block, blockIndex) {
-            const img = e.target;
-            const rect = img.getBoundingClientRect();
+            const imgDiv = e.target;
+            const rect = imgDiv.getBoundingClientRect();
             
             const clickY = (e.clientY - rect.top) / currentZoom;
             const displayHeight = rect.height / currentZoom;
@@ -1353,7 +1449,7 @@
                 if (!block.cutPoints.includes(actualY)) {
                     block.cutPoints.push(actualY);
                     block.cutPoints.sort((a, b) => a - b);
-                    const content = img.closest('.image-content');
+                    const content = imgDiv.closest('.image-content');
                     renderAllOverlays(block, blockIndex, content);
                 }
             } else if (currentMode === 'crop') {
@@ -1366,7 +1462,7 @@
                     block.cropRegions.push({ startY, endY });
                     cropTempPoint = null;
                     hideModeIndicator();
-                    const content = img.closest('.image-content');
+                    const content = imgDiv.closest('.image-content');
                     renderAllOverlays(block, blockIndex, content);
                 }
             }
@@ -1447,7 +1543,7 @@
                     }
                 }
                 
-                const content = draggedCropRegion.img.closest('.image-content');
+                const content = draggedCropRegion.imgDiv.closest('.image-content');
                 renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
             }
         }
@@ -1472,7 +1568,7 @@
                         draggedCutLine.block.cutPoints.sort((a, b) => a - b);
                     }
                     
-                    const content = draggedCutLine.img.closest('.image-content');
+                    const content = draggedCutLine.imgDiv.closest('.image-content');
                     renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
                 }
                 
@@ -1484,8 +1580,8 @@
 
         function startDragCutLine(e, block, oldY, blockIndex) {
             const blockEl = document.getElementById(`block-${blockIndex}`);
-            const img = blockEl.querySelector('.image-chunk');
-            const rect = img.getBoundingClientRect();
+            const imgDiv = blockEl.querySelector('.image-chunk');
+            const rect = imgDiv.getBoundingClientRect();
             const scale = (rect.height / currentZoom) / block.height;
             
             draggedCutLine = { 
@@ -1494,7 +1590,7 @@
                 blockIndex, 
                 rect, 
                 scale, 
-                img,
+                imgDiv,
                 zoom: currentZoom
             };
             
@@ -1526,7 +1622,7 @@
                             draggedCutLine.block.cutPoints.push(actualY);
                             draggedCutLine.block.cutPoints.sort((a, b) => a - b);
                         }
-                        const content = draggedCutLine.img.closest('.image-content');
+                        const content = draggedCutLine.imgDiv.closest('.image-content');
                         renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
                     }
                     draggedCutLine = null;
@@ -1538,8 +1634,8 @@
 
         function startDragCropEdge(e, block, region, blockIndex, regionIdx, edge, scale) {
             const blockEl = document.getElementById(`block-${blockIndex}`);
-            const img = blockEl.querySelector('.image-chunk');
-            const rect = img.getBoundingClientRect();
+            const imgDiv = blockEl.querySelector('.image-chunk');
+            const rect = imgDiv.getBoundingClientRect();
             const currentScale = (rect.height / currentZoom) / block.height;
             
             draggedCropRegion = { 
@@ -1550,7 +1646,7 @@
                 edge, 
                 rect, 
                 scale: currentScale, 
-                img,
+                imgDiv,
                 zoom: currentZoom
             };
             
@@ -1566,7 +1662,7 @@
                     } else {
                         if (actualY > draggedCropRegion.region.startY + 10) draggedCropRegion.region.endY = actualY;
                     }
-                    const content = draggedCropRegion.img.closest('.image-content');
+                    const content = draggedCropRegion.imgDiv.closest('.image-content');
                     renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
                 };
                 
@@ -1627,6 +1723,23 @@
             closeSidebar();
         }
 
+        // FIX 1: Nút reset về width gốc
+        function resetToOriginalWidth() {
+            if (originalImageWidth !== null) {
+                let width = originalImageWidth;
+                if (width < 720) width = 720;
+                if (width > 10000) width = 10000;
+                
+                targetWidthValue = width;
+                document.getElementById('targetWidth').value = width;
+                document.getElementById('targetWidthInput').value = width;
+                
+                showToast(`✅ Đã reset về ${width}px`);
+            } else {
+                showToast('⚠️ Chưa có ảnh nào', true);
+            }
+        }
+
         // ==================== BUILD SEGMENTS ====================
         function buildOutputSegments() {
             const segments = [];
@@ -1669,41 +1782,31 @@
 
         // ==================== CHECK IF NEED PROCESSING ====================
         function needsProcessing(segment) {
-            // Có cắt → cần process
             if (segment.blocks.length !== 1) return true;
             
             const block = segment.blocks[0];
             
-            // Có cut points → cần process
             if (block.cutPoints.length > 0) return true;
-            
-            // Có crop → cần process
             if (block.cropRegions.length > 0) return true;
-            
-            // Không phải toàn bộ ảnh → cần process
             if (segment.startY !== 0 || segment.endY !== block.height) return true;
             
-            // Có merge → cần process
             const blockIndex = imageBlocks.indexOf(block);
             if (blockIndex > 0 && mergeStates[blockIndex - 1].merged) return true;
             if (blockIndex < imageBlocks.length - 1 && mergeStates[blockIndex].merged) return true;
             
-            // Width khác gốc → cần process
             if (targetWidthValue !== block.width) return true;
             
-            // Không cần process → return file gốc
             return false;
         }
 
-        // ==================== PROCESS SEGMENT ====================
+        // ==================== PROCESS SEGMENT (WITH PICA) ====================
         async function processSegment(segment, forPDF = false) {
-            // Nếu không cần xử lý → trả về file gốc
             if (!forPDF && !needsProcessing(segment)) {
                 console.log('📋 Copy file gốc:', segment.blocks[0].name);
                 return segment.blocks[0].file;
             }
             
-            console.log('🎨 Xử lý qua canvas:', segment.blocks.map(b => b.name).join('+'));
+            console.log('🎨 Xử lý qua canvas (Pica):', segment.blocks.map(b => b.name).join('+'));
             
             const { blocks, startY, endY } = segment;
             
@@ -1737,12 +1840,13 @@
             
             const height = Math.round(totalHeight * scale);
 
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
+            // Canvas tạm để vẽ với size gốc
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = maxOriginalWidth;
+            tempCanvas.height = totalHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = true;
+            tempCtx.imageSmoothingQuality = 'high';
 
             let destY = 0;
             let remainingStartY = startY;
@@ -1752,7 +1856,6 @@
                 if (remainingHeight <= 0) break;
 
                 const img = await loadImageFromUrl(block.url);
-                const blockScale = width / block.width;
 
                 if (remainingStartY < block.height) {
                     const srcY = remainingStartY;
@@ -1775,9 +1878,8 @@
                         const drawHeight = Math.min(nextCropStart - currentSrcY, srcEndY - currentSrcY);
                         
                         if (drawHeight > 0) {
-                            const destHeight = Math.round(drawHeight * blockScale);
-                            ctx.drawImage(img, 0, currentSrcY, block.width, drawHeight, 0, destY, width, destHeight);
-                            destY += destHeight;
+                            tempCtx.drawImage(img, 0, currentSrcY, block.width, drawHeight, 0, destY, maxOriginalWidth, drawHeight);
+                            destY += drawHeight;
                         }
                         
                         if (nextCropStart < srcEndY && cropEnd > nextCropStart) {
@@ -1794,13 +1896,49 @@
                 }
             }
 
+            // FIX 6: Resize bằng pica.js (Lanczos3)
+            if (width === maxOriginalWidth) {
+                // Không cần resize
+                return new Promise(resolve => tempCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
+            }
+
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = width;
+            finalCanvas.height = height;
+
+            if (picaInstance) {
+                try {
+                    await picaInstance.resize(tempCanvas, finalCanvas, {
+                        quality: 3, // Lanczos3 (chất lượng cao nhất)
+                        alpha: false,
+                        unsharpAmount: 0,
+                        unsharpRadius: 0,
+                        unsharpThreshold: 0
+                    });
+                    console.log('✅ Resize bằng Pica (Lanczos3)');
+                } catch (err) {
+                    console.warn('⚠️ Pica resize lỗi, fallback canvas:', err);
+                    const ctx = finalCanvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(tempCanvas, 0, 0, width, height);
+                }
+            } else {
+                // Fallback: dùng canvas thường
+                const ctx = finalCanvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(tempCanvas, 0, 0, width, height);
+            }
+
             // Apply sharpen nếu bật và upscale
             if (forPDF && enableSharpen && width > maxOriginalWidth) {
                 console.log('✨ Applying sharpen filter');
-                applySharpenFilter(canvas, ctx, maxOriginalWidth, width);
+                const ctx = finalCanvas.getContext('2d');
+                applySharpenFilter(finalCanvas, ctx, maxOriginalWidth, width);
             }
 
-            return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
+            return new Promise(resolve => finalCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
         }
 
         function loadImageFromUrl(url) {
@@ -2208,9 +2346,10 @@
         // ==================== CONFIG ====================
         function exportConfig() {
             const config = {
-                version: 19,
+                version: 20,
                 platform: { isIOS, isAndroid, isMobile },
                 targetWidth: targetWidthValue,
+                originalImageWidth: originalImageWidth,
                 jpegQuality: jpegQualityValue,
                 enableSharpen: enableSharpen,
                 outputPrefix: document.getElementById('outputPrefix').value,
@@ -2248,6 +2387,11 @@
                 document.getElementById('outputPrefix').value = config.outputPrefix;
                 targetWidthValue = config.targetWidth;
                 
+                if (config.originalImageWidth !== undefined) {
+                    originalImageWidth = config.originalImageWidth;
+                    document.getElementById('originalWidthLabel').textContent = originalImageWidth;
+                }
+                
                 if (config.enableSharpen !== undefined) {
                     enableSharpen = config.enableSharpen;
                     document.getElementById('sharpenCheck').checked = enableSharpen;
@@ -2260,6 +2404,7 @@
         });
 
         // ==================== UTILS ====================
+        // FIX 2: Sửa input số
         function setupRangeInputs() {
             const widthSlider = document.getElementById('targetWidth');
             const widthInput = document.getElementById('targetWidthInput');
@@ -2269,9 +2414,19 @@
                 widthInput.value = targetWidthValue;
             });
             
-            widthInput.addEventListener('input', (e) => {
+            // Dùng change và blur thay vì input
+            widthInput.addEventListener('change', (e) => {
                 let val = parseInt(e.target.value);
-                if (val < 720) val = 720;
+                if (isNaN(val) || val < 720) val = 720;
+                if (val > 10000) val = 10000;
+                targetWidthValue = val;
+                widthSlider.value = val;
+                widthInput.value = val;
+            });
+            
+            widthInput.addEventListener('blur', (e) => {
+                let val = parseInt(e.target.value);
+                if (isNaN(val) || val < 720) val = 720;
                 if (val > 10000) val = 10000;
                 targetWidthValue = val;
                 widthSlider.value = val;
@@ -2288,6 +2443,8 @@
             
             imageBlocks = [];
             mergeStates = [];
+            originalImageWidth = null;
+            document.getElementById('originalWidthLabel').textContent = '--';
             renderAll();
             closeSidebar();
         }
