@@ -301,7 +301,6 @@
             position: relative;
         }
         
-        /* FIX: Scrollbar to hơn cho mobile */
         .canvas-area::-webkit-scrollbar {
             width: 20px;
         }
@@ -396,7 +395,6 @@
             line-height: 0;
         }
         
-        /* FIX: Dùng background-image thay vì img src */
         .image-chunk {
             display: block;
             width: 100%;
@@ -830,6 +828,8 @@
         <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
         <h1>✂️ WEBTOON CUT PRO</h1>
         <div class="header-controls">
+            <!-- NÚT MỚI: Download All JPG ở header -->
+            <button class="btn btn-success" onclick="downloadAllJPG()" id="headerDownloadBtn" style="width: auto; padding: 8px 16px; font-size: 12px; display: none;">💾 JPG</button>
             <button class="btn btn-primary" onclick="exportConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">💾</button>
             <button class="btn btn-warning" onclick="importConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">📂</button>
             <input type="file" id="configInput" accept=".json" style="display: none;">
@@ -969,11 +969,7 @@
         let cropTempPoint = null;
         let isProcessing = false;
         let shouldStop = false;
-        
-        // FIX 1: Lưu width ảnh gốc
         let originalImageWidth = null;
-        
-        // FIX 6: Khởi tạo pica.js
         let picaInstance = null;
 
         // ==================== TOAST ====================
@@ -1036,7 +1032,6 @@
 
         // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', () => {
-            // FIX 6: Khởi tạo pica
             if (window.pica) {
                 picaInstance = window.pica();
                 console.log('✅ Pica.js loaded (Lanczos3 resize)');
@@ -1056,7 +1051,6 @@
                 }
             });
             
-            // FIX 3: Chặn drag ảnh
             document.addEventListener('dragstart', (e) => {
                 if (e.target.classList.contains('image-chunk')) {
                     e.preventDefault();
@@ -1152,9 +1146,7 @@
         async function handleFilesUpload(files) {
             showProgress(true, 'Đang tải ảnh...');
             
-            // FIX 4: Chặn file blob UUID
             const imageFiles = files.filter(f => {
-                // Chặn file có tên dạng UUID (từ blob)
                 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                 if (uuidPattern.test(f.name.replace(/\.[^.]+$/, ''))) {
                     console.log('🚫 Chặn upload blob UUID:', f.name);
@@ -1181,7 +1173,6 @@
                 try {
                     const dims = await getImageDimensions(imageFiles[i]);
                     
-                    // FIX 1: Lưu width ảnh đầu tiên
                     if (isFirstUpload && i === 0) {
                         originalImageWidth = dims.width;
                         document.getElementById('originalWidthLabel').textContent = dims.width;
@@ -1258,8 +1249,17 @@
                         </div>
                     </div>
                 `;
+                
+                // Ẩn nút download ở header khi không có ảnh
+                const headerBtn = document.getElementById('headerDownloadBtn');
+                if (headerBtn) headerBtn.style.display = 'none';
+                
                 return;
             }
+
+            // Hiện nút download ở header khi có ảnh
+            const headerBtn = document.getElementById('headerDownloadBtn');
+            if (headerBtn) headerBtn.style.display = 'block';
 
             imageBlocks.forEach((block, index) => {
                 const blockEl = createBlockElement(block, index);
@@ -1283,7 +1283,6 @@
             });
         }
 
-        // FIX 3: Dùng background-image thay vì <img>
         function createBlockElement(block, index) {
             const div = document.createElement('div');
             div.className = 'image-block';
@@ -1293,19 +1292,16 @@
             const content = document.createElement('div');
             content.className = 'image-content';
             
-            // Tạo div với background-image
             const imgDiv = document.createElement('div');
             imgDiv.className = 'image-chunk';
             imgDiv.style.backgroundImage = `url("${block.url}")`;
             imgDiv.dataset.blockIndex = index;
             
-            // Tính aspect ratio
             const aspectRatio = (block.height / block.width) * 100;
             imgDiv.style.paddingBottom = aspectRatio + '%';
             
             imgDiv.onclick = (e) => handleImageClick(e, block, index);
             
-            // Load xong thì render overlay
             const tempImg = new Image();
             tempImg.onload = () => {
                 renderAllOverlays(block, index, content);
@@ -1723,7 +1719,6 @@
             closeSidebar();
         }
 
-        // FIX 1: Nút reset về width gốc
         function resetToOriginalWidth() {
             if (originalImageWidth !== null) {
                 let width = originalImageWidth;
@@ -1799,7 +1794,7 @@
             return false;
         }
 
-        // ==================== PROCESS SEGMENT (WITH PICA) ====================
+        // ==================== PROCESS SEGMENT (FIXED CROP LOGIC) ====================
         async function processSegment(segment, forPDF = false) {
             if (!forPDF && !needsProcessing(segment)) {
                 console.log('📋 Copy file gốc:', segment.blocks[0].name);
@@ -1826,21 +1821,46 @@
             
             const scale = width / maxOriginalWidth;
             
-            let totalHeight = endY - startY;
-            
-            blocks.forEach(block => {
-                block.cropRegions.forEach(region => {
-                    if (region.endY > startY && region.startY < endY) {
-                        const overlapStart = Math.max(region.startY, startY);
-                        const overlapEnd = Math.min(region.endY, endY);
-                        totalHeight -= (overlapEnd - overlapStart);
+            // FIX CROP: Tính toán lại totalHeight chính xác
+            let totalHeight = 0;
+            let remainingStartY = startY;
+            let remainingHeight = endY - startY;
+
+            for (let block of blocks) {
+                if (remainingHeight <= 0) break;
+
+                if (remainingStartY < block.height) {
+                    const srcY = remainingStartY;
+                    const srcHeight = Math.min(block.height - srcY, remainingHeight);
+                    const srcEndY = srcY + srcHeight;
+                    
+                    // Tính các phần cần vẽ (bỏ qua crop regions)
+                    const sortedCrops = [...block.cropRegions].sort((a, b) => a.startY - b.startY);
+                    
+                    let currentY = srcY;
+                    for (let crop of sortedCrops) {
+                        if (crop.endY <= currentY || crop.startY >= srcEndY) continue;
+                        
+                        if (currentY < crop.startY && crop.startY < srcEndY) {
+                            totalHeight += Math.min(crop.startY - currentY, srcEndY - currentY);
+                        }
+                        
+                        currentY = Math.max(currentY, crop.endY);
                     }
-                });
-            });
+                    
+                    if (currentY < srcEndY) {
+                        totalHeight += srcEndY - currentY;
+                    }
+
+                    remainingHeight -= srcHeight;
+                    remainingStartY = 0;
+                } else {
+                    remainingStartY -= block.height;
+                }
+            }
             
             const height = Math.round(totalHeight * scale);
 
-            // Canvas tạm để vẽ với size gốc
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = maxOriginalWidth;
             tempCanvas.height = totalHeight;
@@ -1849,9 +1869,10 @@
             tempCtx.imageSmoothingQuality = 'high';
 
             let destY = 0;
-            let remainingStartY = startY;
-            let remainingHeight = endY - startY;
+            remainingStartY = startY;
+            remainingHeight = endY - startY;
 
+            // FIX CROP: Vẽ đúng với crop regions
             for (let block of blocks) {
                 if (remainingHeight <= 0) break;
 
@@ -1860,33 +1881,31 @@
                 if (remainingStartY < block.height) {
                     const srcY = remainingStartY;
                     const srcHeight = Math.min(block.height - srcY, remainingHeight);
-                    
-                    let currentSrcY = srcY;
                     const srcEndY = srcY + srcHeight;
                     
-                    while (currentSrcY < srcEndY) {
-                        let nextCropStart = srcEndY;
-                        let cropEnd = srcEndY;
+                    // Tạo danh sách các phần cần vẽ (bỏ qua crop regions)
+                    const sortedCrops = [...block.cropRegions].sort((a, b) => a.startY - b.startY);
+                    
+                    let currentY = srcY;
+                    for (let crop of sortedCrops) {
+                        if (crop.endY <= currentY || crop.startY >= srcEndY) continue;
                         
-                        for (let region of block.cropRegions) {
-                            if (region.startY > currentSrcY && region.startY < nextCropStart) {
-                                nextCropStart = region.startY;
-                                cropEnd = region.endY;
-                            }
-                        }
-                        
-                        const drawHeight = Math.min(nextCropStart - currentSrcY, srcEndY - currentSrcY);
-                        
-                        if (drawHeight > 0) {
-                            tempCtx.drawImage(img, 0, currentSrcY, block.width, drawHeight, 0, destY, maxOriginalWidth, drawHeight);
+                        // Vẽ phần trước crop region
+                        if (currentY < crop.startY && crop.startY < srcEndY) {
+                            const drawHeight = Math.min(crop.startY - currentY, srcEndY - currentY);
+                            tempCtx.drawImage(img, 0, currentY, block.width, drawHeight, 0, destY, maxOriginalWidth, drawHeight);
                             destY += drawHeight;
                         }
                         
-                        if (nextCropStart < srcEndY && cropEnd > nextCropStart) {
-                            currentSrcY = cropEnd;
-                        } else {
-                            currentSrcY += drawHeight;
-                        }
+                        // Skip crop region
+                        currentY = Math.max(currentY, crop.endY);
+                    }
+                    
+                    // Vẽ phần còn lại
+                    if (currentY < srcEndY) {
+                        const drawHeight = srcEndY - currentY;
+                        tempCtx.drawImage(img, 0, currentY, block.width, drawHeight, 0, destY, maxOriginalWidth, drawHeight);
+                        destY += drawHeight;
                     }
 
                     remainingHeight -= srcHeight;
@@ -1896,9 +1915,7 @@
                 }
             }
 
-            // FIX 6: Resize bằng pica.js (Lanczos3)
             if (width === maxOriginalWidth) {
-                // Không cần resize
                 return new Promise(resolve => tempCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
             }
 
@@ -1909,7 +1926,7 @@
             if (picaInstance) {
                 try {
                     await picaInstance.resize(tempCanvas, finalCanvas, {
-                        quality: 3, // Lanczos3 (chất lượng cao nhất)
+                        quality: 3,
                         alpha: false,
                         unsharpAmount: 0,
                         unsharpRadius: 0,
@@ -1924,14 +1941,12 @@
                     ctx.drawImage(tempCanvas, 0, 0, width, height);
                 }
             } else {
-                // Fallback: dùng canvas thường
                 const ctx = finalCanvas.getContext('2d');
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(tempCanvas, 0, 0, width, height);
             }
 
-            // Apply sharpen nếu bật và upscale
             if (forPDF && enableSharpen && width > maxOriginalWidth) {
                 console.log('✨ Applying sharpen filter');
                 const ctx = finalCanvas.getContext('2d');
@@ -1950,7 +1965,7 @@
             });
         }
 
-        // ==================== DOWNLOAD ALL JPG ====================
+        // ==================== DOWNLOAD ALL JPG (FIXED) ====================
         async function downloadAllJPG() {
             if (imageBlocks.length === 0) return;
             if (isProcessing) return;
@@ -1961,6 +1976,7 @@
             document.getElementById('downloadAllBtn').disabled = true;
             document.getElementById('downloadZipBtn').disabled = true;
             document.getElementById('downloadPdfBtn').disabled = true;
+            document.getElementById('headerDownloadBtn').disabled = true;
             document.getElementById('stopBtn').style.display = 'block';
 
             showProgress(true, 'Đang phân tích...');
@@ -1974,44 +1990,76 @@
             let failed = 0;
             let originalCount = 0;
 
-            if (isIOS) {
-                for (let i = 0; i < segments.length; i++) {
-                    if (shouldStop) break;
-
-                    const filename = `${prefix}${String(i + 1).padStart(3, '0')}.jpg`;
-                    
-                    try {
-                        const blobOrFile = await processSegment(segments[i], false);
-                        
-                        if (blobOrFile instanceof File) {
-                            originalCount++;
+            // FIX: Phân loại ảnh lớn/nhỏ để xử lý đúng cách
+            const tasks = segments.map((seg, idx) => {
+                const maxWidth = Math.max(...seg.blocks.map(b => b.width));
+                let totalHeight = seg.endY - seg.startY;
+                
+                // Trừ đi crop regions
+                seg.blocks.forEach(block => {
+                    block.cropRegions.forEach(region => {
+                        if (region.endY > seg.startY && region.startY < seg.endY) {
+                            const overlapStart = Math.max(region.startY, seg.startY);
+                            const overlapEnd = Math.min(region.endY, seg.endY);
+                            totalHeight -= (overlapEnd - overlapStart);
                         }
-                        
-                        const url = URL.createObjectURL(blobOrFile);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = filename;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                        
-                        completed++;
-                        await sleep(500);
-                    } catch (err) {
-                        console.error('Error:', filename, err);
-                        failed++;
-                    }
-
-                    const percent = (completed + failed) / segments.length * 100;
-                    updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
-                }
-            } else {
-                const queue = segments.map((seg, idx) => ({
+                    });
+                });
+                
+                const estimatedPixels = maxWidth * totalHeight;
+                
+                return {
                     segment: seg,
                     filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
-                    index: idx
-                }));
+                    index: idx,
+                    estimatedPixels
+                };
+            });
 
-                const threads = Math.min(5, segments.length);
+            // Ảnh lớn hơn 10M pixels → download tuần tự
+            const largeImageThreshold = 10000000;
+            const largeTasks = tasks.filter(t => t.estimatedPixels > largeImageThreshold);
+            const smallTasks = tasks.filter(t => t.estimatedPixels <= largeImageThreshold);
+
+            console.log(`📊 Large images: ${largeTasks.length}, Small images: ${smallTasks.length}`);
+
+            // Download large images SEQUENTIALLY
+            for (let task of largeTasks) {
+                if (shouldStop) break;
+
+                try {
+                    const blobOrFile = await processSegment(task.segment, false);
+                    
+                    if (blobOrFile instanceof File) {
+                        originalCount++;
+                    }
+                    
+                    const url = URL.createObjectURL(blobOrFile);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = task.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    // Delay lâu hơn cho ảnh lớn
+                    await sleep(isIOS ? 1500 : 800);
+                    URL.revokeObjectURL(url);
+                    
+                    completed++;
+                } catch (err) {
+                    console.error('Error:', task.filename, err);
+                    failed++;
+                }
+
+                const percent = (completed + failed) / segments.length * 100;
+                updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount} | Lỗi: ${failed}`);
+            }
+
+            // Download small images in PARALLEL (giảm luồng từ 5 → 2 để tránh crash)
+            if (!shouldStop && smallTasks.length > 0) {
+                const threads = Math.min(2, smallTasks.length);
+                const queue = [...smallTasks];
 
                 const worker = async (q) => {
                     while (q.length > 0 && !shouldStop) {
@@ -2029,18 +2077,21 @@
                             const a = document.createElement('a');
                             a.href = url;
                             a.download = task.filename;
+                            document.body.appendChild(a);
                             a.click();
+                            document.body.removeChild(a);
+                            
+                            await sleep(isIOS ? 600 : 300);
                             URL.revokeObjectURL(url);
                             
                             completed++;
-                            await sleep(100);
                         } catch (err) {
                             console.error('Error:', task.filename, err);
                             failed++;
                         }
 
                         const percent = (completed + failed) / segments.length * 100;
-                        updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
+                        updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount} | Lỗi: ${failed}`);
                     }
                 };
 
@@ -2052,6 +2103,8 @@
             
             if (shouldStop) {
                 showToast(`⏹️ Đã dừng! Tải được: ${completed}/${segments.length}`, true);
+            } else if (failed > 0) {
+                showToast(`⚠️ Hoàn thành với ${failed} lỗi! Thành công: ${completed}/${segments.length}`, true, 5000);
             } else {
                 showToast(`✅ Hoàn thành! ${completed} ảnh (${originalCount} gốc)`);
             }
@@ -2061,6 +2114,7 @@
             document.getElementById('downloadAllBtn').disabled = false;
             document.getElementById('downloadZipBtn').disabled = false;
             document.getElementById('downloadPdfBtn').disabled = false;
+            document.getElementById('headerDownloadBtn').disabled = false;
             document.getElementById('stopBtn').style.display = 'none';
         }
 
@@ -2075,6 +2129,7 @@
             document.getElementById('downloadAllBtn').disabled = true;
             document.getElementById('downloadZipBtn').disabled = true;
             document.getElementById('downloadPdfBtn').disabled = true;
+            document.getElementById('headerDownloadBtn').disabled = true;
             document.getElementById('stopBtn').style.display = 'block';
 
             showProgress(true, 'Đang tạo ảnh...');
@@ -2131,6 +2186,7 @@
                 document.getElementById('downloadAllBtn').disabled = false;
                 document.getElementById('downloadZipBtn').disabled = false;
                 document.getElementById('downloadPdfBtn').disabled = false;
+                document.getElementById('headerDownloadBtn').disabled = false;
                 document.getElementById('stopBtn').style.display = 'none';
                 return;
             }
@@ -2159,6 +2215,7 @@
             document.getElementById('downloadAllBtn').disabled = false;
             document.getElementById('downloadZipBtn').disabled = false;
             document.getElementById('downloadPdfBtn').disabled = false;
+            document.getElementById('headerDownloadBtn').disabled = false;
             document.getElementById('stopBtn').style.display = 'none';
         }
 
@@ -2173,6 +2230,7 @@
             document.getElementById('downloadAllBtn').disabled = true;
             document.getElementById('downloadZipBtn').disabled = true;
             document.getElementById('downloadPdfBtn').disabled = true;
+            document.getElementById('headerDownloadBtn').disabled = true;
             document.getElementById('stopBtn').style.display = 'block';
 
             showProgress(true, 'Đang tạo ảnh cho PDF...');
@@ -2219,6 +2277,7 @@
                 document.getElementById('downloadAllBtn').disabled = false;
                 document.getElementById('downloadZipBtn').disabled = false;
                 document.getElementById('downloadPdfBtn').disabled = false;
+                document.getElementById('headerDownloadBtn').disabled = false;
                 document.getElementById('stopBtn').style.display = 'none';
                 return;
             }
@@ -2274,6 +2333,7 @@
             document.getElementById('downloadAllBtn').disabled = false;
             document.getElementById('downloadZipBtn').disabled = false;
             document.getElementById('downloadPdfBtn').disabled = false;
+            document.getElementById('headerDownloadBtn').disabled = false;
             document.getElementById('stopBtn').style.display = 'none';
         }
 
@@ -2346,7 +2406,7 @@
         // ==================== CONFIG ====================
         function exportConfig() {
             const config = {
-                version: 20,
+                version: 21,
                 platform: { isIOS, isAndroid, isMobile },
                 targetWidth: targetWidthValue,
                 originalImageWidth: originalImageWidth,
@@ -2404,7 +2464,6 @@
         });
 
         // ==================== UTILS ====================
-        // FIX 2: Sửa input số
         function setupRangeInputs() {
             const widthSlider = document.getElementById('targetWidth');
             const widthInput = document.getElementById('targetWidthInput');
@@ -2414,7 +2473,6 @@
                 widthInput.value = targetWidthValue;
             });
             
-            // Dùng change và blur thay vì input
             widthInput.addEventListener('change', (e) => {
                 let val = parseInt(e.target.value);
                 if (isNaN(val) || val < 720) val = 720;
