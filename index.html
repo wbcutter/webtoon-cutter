@@ -47,6 +47,55 @@
         .header-controls {
             display: flex;
             gap: 8px;
+            align-items: center;
+        }
+        
+        /* NEW: Output counter */
+        .output-counter {
+            background: #1a1a1a;
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #00d4ff;
+            white-space: nowrap;
+            display: none;
+        }
+        
+        .output-counter.visible {
+            display: block;
+        }
+        
+        .output-counter .label {
+            color: #888;
+            margin-right: 4px;
+        }
+        
+        .output-counter .count {
+            color: #00ff88;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .output-counter {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+            
+            .output-counter .count {
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .output-counter .label {
+                display: none;
+            }
+            
+            .output-counter .count::before {
+                content: "📊 ";
+            }
         }
         
         .menu-toggle {
@@ -828,7 +877,12 @@
         <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
         <h1>✂️ WEBTOON CUT PRO</h1>
         <div class="header-controls">
-            <!-- NÚT MỚI: Download All JPG ở header -->
+            <!-- NEW: Output counter -->
+            <div class="output-counter" id="outputCounter">
+                <span class="label">Output:</span>
+                <span class="count" id="outputCount">0</span>
+            </div>
+            
             <button class="btn btn-success" onclick="downloadAllJPG()" id="headerDownloadBtn" style="width: auto; padding: 8px 16px; font-size: 12px; display: none;">💾 JPG</button>
             <button class="btn btn-primary" onclick="exportConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">💾</button>
             <button class="btn btn-warning" onclick="importConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">📂</button>
@@ -857,7 +911,10 @@
 
                 <div class="input-group">
                     <label>Tên file output:</label>
-                    <input type="text" id="outputPrefix" value="cut_" placeholder="cut_">
+                    <input type="text" id="outputPrefix" value="cut" placeholder="cut">
+                    <p style="font-size: 10px; color: #555; margin-top: 5px; padding-left: 10px;">
+                        Preview: <span id="filenamePreview" style="color: #00d4ff;">cut_001.jpg</span>
+                    </p>
                 </div>
 
                 <div class="input-group">
@@ -1030,6 +1087,30 @@
             ctx.putImageData(imageData, 0, 0);
         }
 
+        // ==================== NEW: OUTPUT COUNTER ====================
+        function updateOutputCount() {
+            const segments = buildOutputSegments();
+            const count = segments.length;
+            
+            const counterEl = document.getElementById('outputCounter');
+            const countEl = document.getElementById('outputCount');
+            
+            if (count > 0) {
+                counterEl.classList.add('visible');
+                countEl.textContent = count;
+            } else {
+                counterEl.classList.remove('visible');
+                countEl.textContent = '0';
+            }
+        }
+
+        // ==================== NEW: FILENAME PREVIEW ====================
+        function updateFilenamePreview() {
+            const prefix = document.getElementById('outputPrefix').value || 'cut';
+            const preview = `${prefix}_001.jpg`;
+            document.getElementById('filenamePreview').textContent = preview;
+        }
+
         // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', () => {
             if (window.pica) {
@@ -1043,6 +1124,7 @@
             setupRangeInputs();
             setupZoomControls();
             setupFileInput();
+            setupFilenamePreview();
             applyZoom();
             
             document.addEventListener('contextmenu', (e) => {
@@ -1059,6 +1141,14 @@
 
             setupTouchSupport();
         });
+
+        // ==================== FILENAME PREVIEW SETUP ====================
+        function setupFilenamePreview() {
+            const prefixInput = document.getElementById('outputPrefix');
+            prefixInput.addEventListener('input', updateFilenamePreview);
+            prefixInput.addEventListener('change', updateFilenamePreview);
+            updateFilenamePreview();
+        }
 
         // ==================== MOBILE SIDEBAR ====================
         function toggleSidebar() {
@@ -1211,6 +1301,7 @@
             showProgress(false);
 
             renderAll();
+            updateOutputCount(); // NEW
             closeSidebar();
         }
 
@@ -1250,14 +1341,13 @@
                     </div>
                 `;
                 
-                // Ẩn nút download ở header khi không có ảnh
                 const headerBtn = document.getElementById('headerDownloadBtn');
                 if (headerBtn) headerBtn.style.display = 'none';
                 
+                updateOutputCount(); // NEW
                 return;
             }
 
-            // Hiện nút download ở header khi có ảnh
             const headerBtn = document.getElementById('headerDownloadBtn');
             if (headerBtn) headerBtn.style.display = 'block';
 
@@ -1281,6 +1371,8 @@
                     }
                 }
             });
+            
+            updateOutputCount(); // NEW
         }
 
         function createBlockElement(block, index) {
@@ -1447,6 +1539,7 @@
                     block.cutPoints.sort((a, b) => a - b);
                     const content = imgDiv.closest('.image-content');
                     renderAllOverlays(block, blockIndex, content);
+                    updateOutputCount(); // NEW
                 }
             } else if (currentMode === 'crop') {
                 if (!cropTempPoint) {
@@ -1460,6 +1553,7 @@
                     hideModeIndicator();
                     const content = imgDiv.closest('.image-content');
                     renderAllOverlays(block, blockIndex, content);
+                    updateOutputCount(); // NEW
                 }
             }
         }
@@ -1474,6 +1568,7 @@
                     if (blockEl) {
                         const content = blockEl.querySelector('.image-content');
                         renderAllOverlays(block, blockIndex, content);
+                        updateOutputCount(); // NEW
                     }
                 }
             }
@@ -1486,6 +1581,7 @@
             if (blockEl) {
                 const content = blockEl.querySelector('.image-content');
                 renderAllOverlays(block, blockIndex, content);
+                updateOutputCount(); // NEW
             }
         }
 
@@ -1566,10 +1662,12 @@
                     
                     const content = draggedCutLine.imgDiv.closest('.image-content');
                     renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
+                    updateOutputCount(); // NEW
                 }
                 
                 draggedCutLine = null;
             } else if (draggedCropRegion) {
+                updateOutputCount(); // NEW
                 draggedCropRegion = null;
             }
         }
@@ -1620,6 +1718,7 @@
                         }
                         const content = draggedCutLine.imgDiv.closest('.image-content');
                         renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
+                        updateOutputCount(); // NEW
                     }
                     draggedCutLine = null;
                     document.onmousemove = null;
@@ -1663,6 +1762,7 @@
                 };
                 
                 document.onmouseup = () => {
+                    updateOutputCount(); // NEW
                     draggedCropRegion = null;
                     document.onmousemove = null;
                     document.onmouseup = null;
@@ -1821,7 +1921,6 @@
             
             const scale = width / maxOriginalWidth;
             
-            // FIX CROP: Tính toán lại totalHeight chính xác
             let totalHeight = 0;
             let remainingStartY = startY;
             let remainingHeight = endY - startY;
@@ -1834,7 +1933,6 @@
                     const srcHeight = Math.min(block.height - srcY, remainingHeight);
                     const srcEndY = srcY + srcHeight;
                     
-                    // Tính các phần cần vẽ (bỏ qua crop regions)
                     const sortedCrops = [...block.cropRegions].sort((a, b) => a.startY - b.startY);
                     
                     let currentY = srcY;
@@ -1872,7 +1970,6 @@
             remainingStartY = startY;
             remainingHeight = endY - startY;
 
-            // FIX CROP: Vẽ đúng với crop regions
             for (let block of blocks) {
                 if (remainingHeight <= 0) break;
 
@@ -1883,25 +1980,21 @@
                     const srcHeight = Math.min(block.height - srcY, remainingHeight);
                     const srcEndY = srcY + srcHeight;
                     
-                    // Tạo danh sách các phần cần vẽ (bỏ qua crop regions)
                     const sortedCrops = [...block.cropRegions].sort((a, b) => a.startY - b.startY);
                     
                     let currentY = srcY;
                     for (let crop of sortedCrops) {
                         if (crop.endY <= currentY || crop.startY >= srcEndY) continue;
                         
-                        // Vẽ phần trước crop region
                         if (currentY < crop.startY && crop.startY < srcEndY) {
                             const drawHeight = Math.min(crop.startY - currentY, srcEndY - currentY);
                             tempCtx.drawImage(img, 0, currentY, block.width, drawHeight, 0, destY, maxOriginalWidth, drawHeight);
                             destY += drawHeight;
                         }
                         
-                        // Skip crop region
                         currentY = Math.max(currentY, crop.endY);
                     }
                     
-                    // Vẽ phần còn lại
                     if (currentY < srcEndY) {
                         const drawHeight = srcEndY - currentY;
                         tempCtx.drawImage(img, 0, currentY, block.width, drawHeight, 0, destY, maxOriginalWidth, drawHeight);
@@ -1965,7 +2058,7 @@
             });
         }
 
-        // ==================== DOWNLOAD ALL JPG (FIXED) ====================
+        // ==================== DOWNLOAD ALL JPG (FIXED FILENAME) ====================
         async function downloadAllJPG() {
             if (imageBlocks.length === 0) return;
             if (isProcessing) return;
@@ -1982,7 +2075,7 @@
             showProgress(true, 'Đang phân tích...');
 
             const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut_';
+            const prefix = document.getElementById('outputPrefix').value || 'cut';
             
             updateProgress(0, `Tìm thấy ${segments.length} file...`);
 
@@ -1990,12 +2083,10 @@
             let failed = 0;
             let originalCount = 0;
 
-            // FIX: Phân loại ảnh lớn/nhỏ để xử lý đúng cách
             const tasks = segments.map((seg, idx) => {
                 const maxWidth = Math.max(...seg.blocks.map(b => b.width));
                 let totalHeight = seg.endY - seg.startY;
                 
-                // Trừ đi crop regions
                 seg.blocks.forEach(block => {
                     block.cropRegions.forEach(region => {
                         if (region.endY > seg.startY && region.startY < seg.endY) {
@@ -2008,22 +2099,23 @@
                 
                 const estimatedPixels = maxWidth * totalHeight;
                 
+                // NEW: Auto add underscore
+                const filename = `${prefix}_${String(idx + 1).padStart(3, '0')}.jpg`;
+                
                 return {
                     segment: seg,
-                    filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
+                    filename,
                     index: idx,
                     estimatedPixels
                 };
             });
 
-            // Ảnh lớn hơn 10M pixels → download tuần tự
             const largeImageThreshold = 10000000;
             const largeTasks = tasks.filter(t => t.estimatedPixels > largeImageThreshold);
             const smallTasks = tasks.filter(t => t.estimatedPixels <= largeImageThreshold);
 
             console.log(`📊 Large images: ${largeTasks.length}, Small images: ${smallTasks.length}`);
 
-            // Download large images SEQUENTIALLY
             for (let task of largeTasks) {
                 if (shouldStop) break;
 
@@ -2042,7 +2134,6 @@
                     a.click();
                     document.body.removeChild(a);
                     
-                    // Delay lâu hơn cho ảnh lớn
                     await sleep(isIOS ? 1500 : 800);
                     URL.revokeObjectURL(url);
                     
@@ -2056,7 +2147,6 @@
                 updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount} | Lỗi: ${failed}`);
             }
 
-            // Download small images in PARALLEL (giảm luồng từ 5 → 2 để tránh crash)
             if (!shouldStop && smallTasks.length > 0) {
                 const threads = Math.min(2, smallTasks.length);
                 const queue = [...smallTasks];
@@ -2118,7 +2208,7 @@
             document.getElementById('stopBtn').style.display = 'none';
         }
 
-        // ==================== DOWNLOAD ZIP ====================
+        // ==================== DOWNLOAD ZIP (FIXED FILENAME) ====================
         async function downloadZIP() {
             if (imageBlocks.length === 0) return;
             if (isProcessing) return;
@@ -2135,7 +2225,7 @@
             showProgress(true, 'Đang tạo ảnh...');
 
             const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut_';
+            const prefix = document.getElementById('outputPrefix').value || 'cut';
             
             const zip = new JSZip();
             let completed = 0;
@@ -2144,7 +2234,7 @@
 
             const queue = segments.map((seg, idx) => ({
                 segment: seg,
-                filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
+                filename: `${prefix}_${String(idx + 1).padStart(3, '0')}.jpg`, // NEW: Auto underscore
                 index: idx
             }));
 
@@ -2203,7 +2293,7 @@
             const url = URL.createObjectURL(zipBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${prefix}output.zip`;
+            a.download = `${prefix}_output.zip`; // NEW: Auto underscore
             a.click();
             URL.revokeObjectURL(url);
 
@@ -2219,7 +2309,7 @@
             document.getElementById('stopBtn').style.display = 'none';
         }
 
-        // ==================== DOWNLOAD PDF ====================
+        // ==================== DOWNLOAD PDF (FIXED FILENAME) ====================
         async function downloadPDF() {
             if (imageBlocks.length === 0) return;
             if (isProcessing) return;
@@ -2236,7 +2326,7 @@
             showProgress(true, 'Đang tạo ảnh cho PDF...');
 
             const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut_';
+            const prefix = document.getElementById('outputPrefix').value || 'cut';
             
             let completed = 0;
             let failed = 0;
@@ -2321,7 +2411,7 @@
             const url = URL.createObjectURL(pdfBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${prefix}output.pdf`;
+            a.download = `${prefix}_output.pdf`; // NEW: Auto underscore
             a.click();
             URL.revokeObjectURL(url);
 
@@ -2406,7 +2496,7 @@
         // ==================== CONFIG ====================
         function exportConfig() {
             const config = {
-                version: 21,
+                version: 22,
                 platform: { isIOS, isAndroid, isMobile },
                 targetWidth: targetWidthValue,
                 originalImageWidth: originalImageWidth,
@@ -2456,6 +2546,8 @@
                     enableSharpen = config.enableSharpen;
                     document.getElementById('sharpenCheck').checked = enableSharpen;
                 }
+                
+                updateFilenamePreview(); // NEW
             } catch (err) {
                 console.error('Config load error:', err);
             }
