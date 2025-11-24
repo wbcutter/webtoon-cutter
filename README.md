@@ -29,7 +29,7 @@ git clone https://github.com/wbcutter/webtoon-cutter.git
 # Mở file index.html bằng trình duyệt
 cd webtoon-cutter
 # Double-click vào index.html hoặc kéo vào trình duyệt
-
+```
 
 ## 🗂 Danh sách công cụ hiện có
 
