@@ -47,55 +47,6 @@
         .header-controls {
             display: flex;
             gap: 8px;
-            align-items: center;
-        }
-        
-        /* NEW: Output counter */
-        .output-counter {
-            background: #1a1a1a;
-            border: 2px solid #00d4ff;
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #00d4ff;
-            white-space: nowrap;
-            display: none;
-        }
-        
-        .output-counter.visible {
-            display: block;
-        }
-        
-        .output-counter .label {
-            color: #888;
-            margin-right: 4px;
-        }
-        
-        .output-counter .count {
-            color: #00ff88;
-            font-size: 14px;
-        }
-        
-        @media (max-width: 768px) {
-            .output-counter {
-                font-size: 11px;
-                padding: 5px 10px;
-            }
-            
-            .output-counter .count {
-                font-size: 13px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .output-counter .label {
-                display: none;
-            }
-            
-            .output-counter .count::before {
-                content: "📊 ";
-            }
         }
         
         .menu-toggle {
@@ -413,6 +364,10 @@
         
         .file-input-wrapper {
             margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         
         .file-input-btn {
@@ -428,6 +383,11 @@
         
         .file-input-btn:active {
             transform: scale(0.98);
+        }
+        
+        .zip-input-btn {
+            background: #9b59b6;
+            color: #fff;
         }
         
         .image-block {
@@ -817,6 +777,100 @@
             word-break: break-all;
         }
         
+        /* Folder Picker Modal */
+        .folder-picker-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+        
+        .folder-picker-overlay.visible {
+            display: flex;
+        }
+        
+        .folder-picker-box {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #9b59b6;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .folder-picker-box h3 {
+            color: #9b59b6;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .folder-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .folder-item {
+            background: #0a0a0a;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .folder-item:hover {
+            border-color: #9b59b6;
+            background: #1a1a1a;
+        }
+        
+        .folder-item.selected {
+            border-color: #9b59b6;
+            background: #9b59b6;
+            color: #fff;
+        }
+        
+        .folder-icon {
+            font-size: 20px;
+        }
+        
+        .folder-info {
+            flex: 1;
+        }
+        
+        .folder-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .folder-count {
+            font-size: 11px;
+            color: #888;
+            margin-top: 3px;
+        }
+        
+        .folder-item.selected .folder-count {
+            color: #fff;
+        }
+        
+        .folder-picker-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
         @supports (-webkit-touch-callout: none) {
             .canvas-area {
                 -webkit-overflow-scrolling: touch;
@@ -877,13 +931,6 @@
         <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
         <h1>✂️ WEBTOON CUT PRO</h1>
         <div class="header-controls">
-            <!-- NEW: Output counter -->
-            <div class="output-counter" id="outputCounter">
-                <span class="label">Output:</span>
-                <span class="count" id="outputCount">0</span>
-            </div>
-            
-            <button class="btn btn-success" onclick="downloadAllJPG()" id="headerDownloadBtn" style="width: auto; padding: 8px 16px; font-size: 12px; display: none;">💾 JPG</button>
             <button class="btn btn-primary" onclick="exportConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">💾</button>
             <button class="btn btn-warning" onclick="importConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">📂</button>
             <input type="file" id="configInput" accept=".json" style="display: none;">
@@ -911,10 +958,7 @@
 
                 <div class="input-group">
                     <label>Tên file output:</label>
-                    <input type="text" id="outputPrefix" value="cut" placeholder="cut">
-                    <p style="font-size: 10px; color: #555; margin-top: 5px; padding-left: 10px;">
-                        Preview: <span id="filenamePreview" style="color: #00d4ff;">cut_001.jpg</span>
-                    </p>
+                    <input type="text" id="outputPrefix" value="cut_" placeholder="cut_">
                 </div>
 
                 <div class="input-group">
@@ -976,6 +1020,9 @@
                     <div class="file-input-wrapper">
                         <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
                         <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+                        
+                        <label class="file-input-btn zip-input-btn" for="zipInput">📦 Chọn ZIP</label>
+                        <input type="file" id="zipInput" accept=".zip" style="display: none;">
                     </div>
                 </div>
             </div>
@@ -1005,7 +1052,24 @@
         </div>
     </div>
 
+    <!-- Folder Picker Modal -->
+    <div class="folder-picker-overlay" id="folderPickerOverlay">
+        <div class="folder-picker-box">
+            <h3>📁 Chọn Folder</h3>
+            <div class="folder-list" id="folderList"></div>
+            <div class="folder-picker-actions">
+                <button class="btn btn-success" onclick="confirmFolderSelection()" id="confirmFolderBtn" disabled>✅ Xác Nhận</button>
+                <button class="btn btn-danger" onclick="closeFolderPicker()">❌ Hủy</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ==================== CANVAS LIMIT ====================
+        const MAX_CANVAS_HEIGHT = 16384;
+        const MAX_CANVAS_WIDTH = 16384;
+        const TILE_HEIGHT = 4096;
+
         // ==================== DETECT PLATFORM ====================
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
         const isAndroid = /Android/i.test(navigator.userAgent);
@@ -1028,6 +1092,10 @@
         let shouldStop = false;
         let originalImageWidth = null;
         let picaInstance = null;
+
+        // ZIP state
+        let currentZipData = null;
+        let selectedFolderPath = null;
 
         // ==================== TOAST ====================
         function showToast(message, isError = false, duration = 3000) {
@@ -1087,30 +1155,6 @@
             ctx.putImageData(imageData, 0, 0);
         }
 
-        // ==================== NEW: OUTPUT COUNTER ====================
-        function updateOutputCount() {
-            const segments = buildOutputSegments();
-            const count = segments.length;
-            
-            const counterEl = document.getElementById('outputCounter');
-            const countEl = document.getElementById('outputCount');
-            
-            if (count > 0) {
-                counterEl.classList.add('visible');
-                countEl.textContent = count;
-            } else {
-                counterEl.classList.remove('visible');
-                countEl.textContent = '0';
-            }
-        }
-
-        // ==================== NEW: FILENAME PREVIEW ====================
-        function updateFilenamePreview() {
-            const prefix = document.getElementById('outputPrefix').value || 'cut';
-            const preview = `${prefix}_001.jpg`;
-            document.getElementById('filenamePreview').textContent = preview;
-        }
-
         // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', () => {
             if (window.pica) {
@@ -1124,7 +1168,7 @@
             setupRangeInputs();
             setupZoomControls();
             setupFileInput();
-            setupFilenamePreview();
+            setupZipInput();
             applyZoom();
             
             document.addEventListener('contextmenu', (e) => {
@@ -1142,14 +1186,6 @@
             setupTouchSupport();
         });
 
-        // ==================== FILENAME PREVIEW SETUP ====================
-        function setupFilenamePreview() {
-            const prefixInput = document.getElementById('outputPrefix');
-            prefixInput.addEventListener('input', updateFilenamePreview);
-            prefixInput.addEventListener('change', updateFilenamePreview);
-            updateFilenamePreview();
-        }
-
         // ==================== MOBILE SIDEBAR ====================
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -1163,6 +1199,235 @@
                 document.getElementById('sidebar').classList.remove('open');
                 document.getElementById('sidebarOverlay').classList.remove('visible');
             }
+        }
+
+        // ==================== ZIP INPUT ====================
+        function setupZipInput() {
+            document.getElementById('zipInput').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    await handleZipUpload(file);
+                }
+                e.target.value = '';
+            });
+        }
+
+        async function handleZipUpload(file) {
+            showProgress(true, 'Đang đọc ZIP...');
+            
+            try {
+                const zip = new JSZip();
+                const zipContent = await zip.loadAsync(file);
+                
+                // Phân tích cấu trúc folder
+                const folders = analyzeFolderStructure(zipContent);
+                
+                console.log('📦 ZIP Structure:', folders);
+                
+                if (folders.length === 0) {
+                    showProgress(false);
+                    showToast('⚠️ Không tìm thấy ảnh trong ZIP', true);
+                    return;
+                }
+                
+                currentZipData = { zipContent, folders };
+                
+                if (folders.length === 1) {
+                    // Chỉ có 1 folder → tự động chọn
+                    selectedFolderPath = folders[0].path;
+                    await loadImagesFromZip();
+                } else {
+                    // Nhiều folder → hiện modal chọn
+                    showProgress(false);
+                    showFolderPicker(folders);
+                }
+                
+            } catch (err) {
+                console.error('ZIP error:', err);
+                showProgress(false);
+                showToast('❌ Lỗi đọc ZIP: ' + err.message, true);
+            }
+        }
+
+        function analyzeFolderStructure(zipContent) {
+            const folderMap = new Map();
+            
+            zipContent.forEach((relativePath, file) => {
+                if (file.dir) return; // Bỏ qua thư mục rỗng
+                
+                // Chỉ lấy file ảnh
+                if (!isImageFile(relativePath)) return;
+                
+                // Lấy folder path
+                const parts = relativePath.split('/');
+                let folderPath = '';
+                
+                if (parts.length > 1) {
+                    // Có folder
+                    folderPath = parts.slice(0, -1).join('/');
+                } else {
+                    // Root level
+                    folderPath = '/';
+                }
+                
+                if (!folderMap.has(folderPath)) {
+                    folderMap.set(folderPath, {
+                        path: folderPath,
+                        name: folderPath === '/' ? '📁 Root' : folderPath.split('/').pop(),
+                        images: []
+                    });
+                }
+                
+                folderMap.get(folderPath).images.push(relativePath);
+            });
+            
+            // Sort folders
+            const folders = Array.from(folderMap.values());
+            folders.forEach(folder => {
+                folder.images.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            });
+            
+            folders.sort((a, b) => a.path.localeCompare(b.path));
+            
+            return folders;
+        }
+
+        function isImageFile(path) {
+            return path.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+        }
+
+        function showFolderPicker(folders) {
+            const overlay = document.getElementById('folderPickerOverlay');
+            const list = document.getElementById('folderList');
+            
+            list.innerHTML = '';
+            selectedFolderPath = null;
+            
+            folders.forEach(folder => {
+                const item = document.createElement('div');
+                item.className = 'folder-item';
+                item.onclick = () => selectFolder(folder.path);
+                
+                item.innerHTML = `
+                    <div class="folder-icon">📁</div>
+                    <div class="folder-info">
+                        <div class="folder-name">${folder.name}</div>
+                        <div class="folder-count">${folder.images.length} ảnh</div>
+                    </div>
+                `;
+                
+                item.dataset.path = folder.path;
+                list.appendChild(item);
+            });
+            
+            overlay.classList.add('visible');
+            document.getElementById('confirmFolderBtn').disabled = true;
+        }
+
+        function selectFolder(path) {
+            selectedFolderPath = path;
+            
+            // Update UI
+            document.querySelectorAll('.folder-item').forEach(item => {
+                item.classList.toggle('selected', item.dataset.path === path);
+            });
+            
+            document.getElementById('confirmFolderBtn').disabled = false;
+        }
+
+        function closeFolderPicker() {
+            document.getElementById('folderPickerOverlay').classList.remove('visible');
+            currentZipData = null;
+            selectedFolderPath = null;
+        }
+
+        async function confirmFolderSelection() {
+            if (!selectedFolderPath) return;
+            
+            closeFolderPicker();
+            await loadImagesFromZip();
+        }
+
+        async function loadImagesFromZip() {
+            if (!currentZipData || !selectedFolderPath) return;
+            
+            showProgress(true, 'Đang load ảnh từ ZIP...');
+            
+            const { zipContent, folders } = currentZipData;
+            const folder = folders.find(f => f.path === selectedFolderPath);
+            
+            if (!folder) {
+                showProgress(false);
+                showToast('❌ Không tìm thấy folder', true);
+                return;
+            }
+            
+            const imageFiles = [];
+            const isFirstUpload = imageBlocks.length === 0;
+            
+            for (let i = 0; i < folder.images.length; i++) {
+                const imagePath = folder.images[i];
+                const zipEntry = zipContent.file(imagePath);
+                
+                if (!zipEntry) continue;
+                
+                updateProgress((i / folder.images.length) * 100, `Đang load ${i + 1}/${folder.images.length}...`);
+                
+                try {
+                    const blob = await zipEntry.async('blob');
+                    const fileName = imagePath.split('/').pop();
+                    
+                    // Tạo File object
+                    const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+                    
+                    const dims = await getImageDimensions(file);
+                    
+                    if (isFirstUpload && i === 0) {
+                        originalImageWidth = dims.width;
+                        document.getElementById('originalWidthLabel').textContent = dims.width;
+                        
+                        let autoWidth = dims.width;
+                        if (autoWidth < 720) autoWidth = 720;
+                        if (autoWidth > 10000) autoWidth = 10000;
+                        
+                        targetWidthValue = autoWidth;
+                        document.getElementById('targetWidth').value = autoWidth;
+                        document.getElementById('targetWidthInput').value = autoWidth;
+                    }
+                    
+                    imageBlocks.push({
+                        id: Date.now() + i + Math.random(),
+                        file: file,
+                        name: fileName,
+                        width: dims.width,
+                        height: dims.height,
+                        url: URL.createObjectURL(file),
+                        cutPoints: [],
+                        cropRegions: []
+                    });
+                    
+                } catch (err) {
+                    console.error('Error loading image:', imagePath, err);
+                }
+            }
+            
+            mergeStates = [];
+            for (let i = 0; i < imageBlocks.length - 1; i++) {
+                mergeStates.push({ index: i, merged: false });
+            }
+            
+            updateProgress(100, 'Hoàn thành!');
+            await sleep(300);
+            showProgress(false);
+            
+            renderAll();
+            closeSidebar();
+            
+            showToast(`✅ Đã load ${imageBlocks.length} ảnh từ ZIP`);
+            
+            // Cleanup
+            currentZipData = null;
+            selectedFolderPath = null;
         }
 
         // ==================== FILE INPUT ====================
@@ -1221,6 +1486,13 @@
                     }
                 } else {
                     files.push(...e.dataTransfer.files);
+                }
+                
+                // Check nếu có file ZIP
+                const zipFiles = files.filter(f => f.name.endsWith('.zip'));
+                if (zipFiles.length > 0) {
+                    await handleZipUpload(zipFiles[0]);
+                    return;
                 }
                 
                 const existingNames = new Set(imageBlocks.map(b => b.name));
@@ -1301,7 +1573,6 @@
             showProgress(false);
 
             renderAll();
-            updateOutputCount(); // NEW
             closeSidebar();
         }
 
@@ -1337,19 +1608,13 @@
                         <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ PC, iOS & Android</p>
                         <div class="file-input-wrapper">
                             <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
+                            
+                            <label class="file-input-btn zip-input-btn" for="zipInput">📦 Chọn ZIP</label>
                         </div>
                     </div>
                 `;
-                
-                const headerBtn = document.getElementById('headerDownloadBtn');
-                if (headerBtn) headerBtn.style.display = 'none';
-                
-                updateOutputCount(); // NEW
                 return;
             }
-
-            const headerBtn = document.getElementById('headerDownloadBtn');
-            if (headerBtn) headerBtn.style.display = 'block';
 
             imageBlocks.forEach((block, index) => {
                 const blockEl = createBlockElement(block, index);
@@ -1371,8 +1636,6 @@
                     }
                 }
             });
-            
-            updateOutputCount(); // NEW
         }
 
         function createBlockElement(block, index) {
@@ -1539,7 +1802,6 @@
                     block.cutPoints.sort((a, b) => a - b);
                     const content = imgDiv.closest('.image-content');
                     renderAllOverlays(block, blockIndex, content);
-                    updateOutputCount(); // NEW
                 }
             } else if (currentMode === 'crop') {
                 if (!cropTempPoint) {
@@ -1553,7 +1815,6 @@
                     hideModeIndicator();
                     const content = imgDiv.closest('.image-content');
                     renderAllOverlays(block, blockIndex, content);
-                    updateOutputCount(); // NEW
                 }
             }
         }
@@ -1568,7 +1829,6 @@
                     if (blockEl) {
                         const content = blockEl.querySelector('.image-content');
                         renderAllOverlays(block, blockIndex, content);
-                        updateOutputCount(); // NEW
                     }
                 }
             }
@@ -1581,7 +1841,6 @@
             if (blockEl) {
                 const content = blockEl.querySelector('.image-content');
                 renderAllOverlays(block, blockIndex, content);
-                updateOutputCount(); // NEW
             }
         }
 
@@ -1662,12 +1921,10 @@
                     
                     const content = draggedCutLine.imgDiv.closest('.image-content');
                     renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
-                    updateOutputCount(); // NEW
                 }
                 
                 draggedCutLine = null;
             } else if (draggedCropRegion) {
-                updateOutputCount(); // NEW
                 draggedCropRegion = null;
             }
         }
@@ -1718,7 +1975,6 @@
                         }
                         const content = draggedCutLine.imgDiv.closest('.image-content');
                         renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
-                        updateOutputCount(); // NEW
                     }
                     draggedCutLine = null;
                     document.onmousemove = null;
@@ -1762,7 +2018,6 @@
                 };
                 
                 document.onmouseup = () => {
-                    updateOutputCount(); // NEW
                     draggedCropRegion = null;
                     document.onmousemove = null;
                     document.onmouseup = null;
@@ -1848,25 +2103,48 @@
                 
                 const blocksInGroup = imageBlocks.slice(i, groupEnd + 1);
                 
-                const allCutPoints = [];
-                let currentY = 0;
-                
+                let totalGroupHeight = 0;
                 blocksInGroup.forEach(block => {
-                    block.cutPoints.forEach(y => {
-                        allCutPoints.push(currentY + y);
-                    });
-                    currentY += block.height;
+                    totalGroupHeight += block.height;
                 });
                 
-                allCutPoints.sort((a, b) => a - b);
-                const points = [0, ...allCutPoints, currentY];
-                
-                for (let j = 0; j < points.length - 1; j++) {
-                    segments.push({
-                        blocks: blocksInGroup,
-                        startY: points[j],
-                        endY: points[j + 1]
+                const safeLimit = MAX_CANVAS_HEIGHT * 0.8;
+                if (totalGroupHeight > safeLimit) {
+                    console.warn(`⚠️ Group quá cao (${totalGroupHeight}px > ${safeLimit}px), tách nhỏ...`);
+                    
+                    blocksInGroup.forEach(block => {
+                        const allCutPoints = block.cutPoints.slice().sort((a, b) => a - b);
+                        const points = [0, ...allCutPoints, block.height];
+                        
+                        for (let j = 0; j < points.length - 1; j++) {
+                            segments.push({
+                                blocks: [block],
+                                startY: points[j],
+                                endY: points[j + 1]
+                            });
+                        }
                     });
+                } else {
+                    const allCutPoints = [];
+                    let currentY = 0;
+                    
+                    blocksInGroup.forEach(block => {
+                        block.cutPoints.forEach(y => {
+                            allCutPoints.push(currentY + y);
+                        });
+                        currentY += block.height;
+                    });
+                    
+                    allCutPoints.sort((a, b) => a - b);
+                    const points = [0, ...allCutPoints, currentY];
+                    
+                    for (let j = 0; j < points.length - 1; j++) {
+                        segments.push({
+                            blocks: blocksInGroup,
+                            startY: points[j],
+                            endY: points[j + 1]
+                        });
+                    }
                 }
                 
                 i = groupEnd + 1;
@@ -1894,14 +2172,14 @@
             return false;
         }
 
-        // ==================== PROCESS SEGMENT (FIXED CROP LOGIC) ====================
+        // ==================== PROCESS SEGMENT ====================
         async function processSegment(segment, forPDF = false) {
             if (!forPDF && !needsProcessing(segment)) {
                 console.log('📋 Copy file gốc:', segment.blocks[0].name);
                 return segment.blocks[0].file;
             }
             
-            console.log('🎨 Xử lý qua canvas (Pica):', segment.blocks.map(b => b.name).join('+'));
+            console.log('🎨 Xử lý canvas:', segment.blocks.map(b => b.name).join('+'));
             
             const { blocks, startY, endY } = segment;
             
@@ -1921,54 +2199,51 @@
             
             const scale = width / maxOriginalWidth;
             
-            let totalHeight = 0;
-            let remainingStartY = startY;
-            let remainingHeight = endY - startY;
-
-            for (let block of blocks) {
-                if (remainingHeight <= 0) break;
-
-                if (remainingStartY < block.height) {
-                    const srcY = remainingStartY;
-                    const srcHeight = Math.min(block.height - srcY, remainingHeight);
-                    const srcEndY = srcY + srcHeight;
-                    
-                    const sortedCrops = [...block.cropRegions].sort((a, b) => a.startY - b.startY);
-                    
-                    let currentY = srcY;
-                    for (let crop of sortedCrops) {
-                        if (crop.endY <= currentY || crop.startY >= srcEndY) continue;
-                        
-                        if (currentY < crop.startY && crop.startY < srcEndY) {
-                            totalHeight += Math.min(crop.startY - currentY, srcEndY - currentY);
-                        }
-                        
-                        currentY = Math.max(currentY, crop.endY);
+            let totalHeight = endY - startY;
+            
+            blocks.forEach(block => {
+                block.cropRegions.forEach(region => {
+                    if (region.endY > startY && region.startY < endY) {
+                        const overlapStart = Math.max(region.startY, startY);
+                        const overlapEnd = Math.min(region.endY, endY);
+                        totalHeight -= (overlapEnd - overlapStart);
                     }
-                    
-                    if (currentY < srcEndY) {
-                        totalHeight += srcEndY - currentY;
-                    }
-
-                    remainingHeight -= srcHeight;
-                    remainingStartY = 0;
-                } else {
-                    remainingStartY -= block.height;
-                }
-            }
+                });
+            });
             
             const height = Math.round(totalHeight * scale);
 
+            if (width > MAX_CANVAS_WIDTH || height > MAX_CANVAS_HEIGHT) {
+                const err = `⚠️ Kích thước ${width}x${height}px vượt quá ${MAX_CANVAS_WIDTH}x${MAX_CANVAS_HEIGHT}px\n→ Vui lòng giảm Width hoặc bỏ ghép`;
+                console.error(err);
+                throw new Error(err);
+            }
+
+            if (totalHeight > 8192 || height > 8192) {
+                console.log('🧩 Dùng TILE rendering');
+                return await processTiledSegment(blocks, startY, endY, width, height, maxOriginalWidth, totalHeight, forPDF);
+            }
+
+            return await processStandardSegment(blocks, startY, endY, width, height, maxOriginalWidth, totalHeight, forPDF);
+        }
+
+        // ==================== STANDARD CANVAS ====================
+        async function processStandardSegment(blocks, startY, endY, finalWidth, finalHeight, originalWidth, totalHeight, forPDF) {
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = maxOriginalWidth;
+            tempCanvas.width = originalWidth;
             tempCanvas.height = totalHeight;
-            const tempCtx = tempCanvas.getContext('2d');
+            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: false });
+            
+            if (!tempCtx) {
+                throw new Error('Không thể tạo canvas context');
+            }
+            
             tempCtx.imageSmoothingEnabled = true;
             tempCtx.imageSmoothingQuality = 'high';
 
             let destY = 0;
-            remainingStartY = startY;
-            remainingHeight = endY - startY;
+            let remainingStartY = startY;
+            let remainingHeight = endY - startY;
 
             for (let block of blocks) {
                 if (remainingHeight <= 0) break;
@@ -1978,27 +2253,33 @@
                 if (remainingStartY < block.height) {
                     const srcY = remainingStartY;
                     const srcHeight = Math.min(block.height - srcY, remainingHeight);
+                    
+                    let currentSrcY = srcY;
                     const srcEndY = srcY + srcHeight;
                     
-                    const sortedCrops = [...block.cropRegions].sort((a, b) => a.startY - b.startY);
-                    
-                    let currentY = srcY;
-                    for (let crop of sortedCrops) {
-                        if (crop.endY <= currentY || crop.startY >= srcEndY) continue;
+                    while (currentSrcY < srcEndY) {
+                        let nextCropStart = srcEndY;
+                        let cropEnd = srcEndY;
                         
-                        if (currentY < crop.startY && crop.startY < srcEndY) {
-                            const drawHeight = Math.min(crop.startY - currentY, srcEndY - currentY);
-                            tempCtx.drawImage(img, 0, currentY, block.width, drawHeight, 0, destY, maxOriginalWidth, drawHeight);
+                        for (let region of block.cropRegions) {
+                            if (region.startY > currentSrcY && region.startY < nextCropStart) {
+                                nextCropStart = region.startY;
+                                cropEnd = region.endY;
+                            }
+                        }
+                        
+                        const drawHeight = Math.min(nextCropStart - currentSrcY, srcEndY - currentSrcY);
+                        
+                        if (drawHeight > 0) {
+                            tempCtx.drawImage(img, 0, currentSrcY, block.width, drawHeight, 0, destY, originalWidth, drawHeight);
                             destY += drawHeight;
                         }
                         
-                        currentY = Math.max(currentY, crop.endY);
-                    }
-                    
-                    if (currentY < srcEndY) {
-                        const drawHeight = srcEndY - currentY;
-                        tempCtx.drawImage(img, 0, currentY, block.width, drawHeight, 0, destY, maxOriginalWidth, drawHeight);
-                        destY += drawHeight;
+                        if (nextCropStart < srcEndY && cropEnd > nextCropStart) {
+                            currentSrcY = cropEnd;
+                        } else {
+                            currentSrcY += drawHeight;
+                        }
                     }
 
                     remainingHeight -= srcHeight;
@@ -2008,13 +2289,13 @@
                 }
             }
 
-            if (width === maxOriginalWidth) {
+            if (finalWidth === originalWidth) {
                 return new Promise(resolve => tempCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
             }
 
             const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = width;
-            finalCanvas.height = height;
+            finalCanvas.width = finalWidth;
+            finalCanvas.height = finalHeight;
 
             if (picaInstance) {
                 try {
@@ -2025,27 +2306,144 @@
                         unsharpRadius: 0,
                         unsharpThreshold: 0
                     });
-                    console.log('✅ Resize bằng Pica (Lanczos3)');
+                    console.log('✅ Pica resize (Lanczos3)');
                 } catch (err) {
-                    console.warn('⚠️ Pica resize lỗi, fallback canvas:', err);
+                    console.warn('⚠️ Pica lỗi, fallback canvas:', err);
                     const ctx = finalCanvas.getContext('2d');
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
-                    ctx.drawImage(tempCanvas, 0, 0, width, height);
+                    ctx.drawImage(tempCanvas, 0, 0, finalWidth, finalHeight);
                 }
             } else {
                 const ctx = finalCanvas.getContext('2d');
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(tempCanvas, 0, 0, width, height);
+                ctx.drawImage(tempCanvas, 0, 0, finalWidth, finalHeight);
             }
 
-            if (forPDF && enableSharpen && width > maxOriginalWidth) {
-                console.log('✨ Applying sharpen filter');
+            if (forPDF && enableSharpen && finalWidth > originalWidth) {
+                console.log('✨ Sharpen');
                 const ctx = finalCanvas.getContext('2d');
-                applySharpenFilter(finalCanvas, ctx, maxOriginalWidth, width);
+                applySharpenFilter(finalCanvas, ctx, originalWidth, finalWidth);
             }
 
+            return new Promise(resolve => finalCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
+        }
+
+        // ==================== TILE-BASED RENDERING ====================
+        async function processTiledSegment(blocks, startY, endY, finalWidth, finalHeight, originalWidth, totalHeight, forPDF) {
+            console.log(`🧩 Tile: ${finalWidth}x${finalHeight}px (gốc: ${originalWidth}x${totalHeight}px)`);
+            
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = finalWidth;
+            finalCanvas.height = finalHeight;
+            const finalCtx = finalCanvas.getContext('2d', { willReadFrequently: false });
+            
+            if (!finalCtx) {
+                throw new Error('Không thể tạo final canvas');
+            }
+            
+            finalCtx.imageSmoothingEnabled = true;
+            finalCtx.imageSmoothingQuality = 'high';
+            
+            const scale = finalWidth / originalWidth;
+            const numTiles = Math.ceil(totalHeight / TILE_HEIGHT);
+            
+            for (let tileIndex = 0; tileIndex < numTiles; tileIndex++) {
+                const tileStartY = tileIndex * TILE_HEIGHT;
+                const tileEndY = Math.min((tileIndex + 1) * TILE_HEIGHT, totalHeight);
+                const tileHeight = tileEndY - tileStartY;
+                
+                console.log(`  → Tile ${tileIndex + 1}/${numTiles}: Y=${tileStartY}-${tileEndY} (${tileHeight}px)`);
+                
+                const tileCanvas = document.createElement('canvas');
+                tileCanvas.width = originalWidth;
+                tileCanvas.height = tileHeight;
+                const tileCtx = tileCanvas.getContext('2d', { willReadFrequently: false });
+                
+                if (!tileCtx) continue;
+                
+                tileCtx.imageSmoothingEnabled = true;
+                tileCtx.imageSmoothingQuality = 'high';
+                
+                let destY = 0;
+                let remainingStartY = startY + tileStartY;
+                let remainingHeight = tileHeight;
+                
+                for (let block of blocks) {
+                    if (remainingHeight <= 0) break;
+                    
+                    const img = await loadImageFromUrl(block.url);
+                    
+                    if (remainingStartY < block.height) {
+                        const srcY = remainingStartY;
+                        const srcHeight = Math.min(block.height - srcY, remainingHeight);
+                        
+                        let currentSrcY = srcY;
+                        const srcEndY = srcY + srcHeight;
+                        
+                        while (currentSrcY < srcEndY) {
+                            let nextCropStart = srcEndY;
+                            let cropEnd = srcEndY;
+                            
+                            for (let region of block.cropRegions) {
+                                if (region.startY > currentSrcY && region.startY < nextCropStart) {
+                                    nextCropStart = region.startY;
+                                    cropEnd = region.endY;
+                                }
+                            }
+                            
+                            const drawHeight = Math.min(nextCropStart - currentSrcY, srcEndY - currentSrcY);
+                            
+                            if (drawHeight > 0) {
+                                tileCtx.drawImage(img, 0, currentSrcY, block.width, drawHeight, 0, destY, originalWidth, drawHeight);
+                                destY += drawHeight;
+                            }
+                            
+                            if (nextCropStart < srcEndY && cropEnd > nextCropStart) {
+                                currentSrcY = cropEnd;
+                            } else {
+                                currentSrcY += drawHeight;
+                            }
+                        }
+                        
+                        remainingHeight -= srcHeight;
+                        remainingStartY = 0;
+                    } else {
+                        remainingStartY -= block.height;
+                    }
+                }
+                
+                const scaledTileHeight = Math.round(tileHeight * scale);
+                const finalTileY = Math.round(tileStartY * scale);
+                
+                if (finalWidth === originalWidth) {
+                    finalCtx.drawImage(tileCanvas, 0, finalTileY);
+                } else {
+                    const resizedTile = document.createElement('canvas');
+                    resizedTile.width = finalWidth;
+                    resizedTile.height = scaledTileHeight;
+                    
+                    if (picaInstance) {
+                        await picaInstance.resize(tileCanvas, resizedTile, { quality: 3, alpha: false });
+                    } else {
+                        const ctx = resizedTile.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(tileCanvas, 0, 0, finalWidth, scaledTileHeight);
+                    }
+                    
+                    finalCtx.drawImage(resizedTile, 0, finalTileY);
+                }
+                
+                console.log(`    ✅ Tile ${tileIndex + 1} OK`);
+            }
+            
+            if (forPDF && enableSharpen && finalWidth > originalWidth) {
+                console.log('✨ Sharpen');
+                applySharpenFilter(finalCanvas, finalCtx, originalWidth, finalWidth);
+            }
+            
             return new Promise(resolve => finalCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
         }
 
@@ -2058,7 +2456,7 @@
             });
         }
 
-        // ==================== DOWNLOAD ALL JPG (FIXED FILENAME) ====================
+        // ==================== DOWNLOAD ALL JPG ====================
         async function downloadAllJPG() {
             if (imageBlocks.length === 0) return;
             if (isProcessing) return;
@@ -2069,13 +2467,12 @@
             document.getElementById('downloadAllBtn').disabled = true;
             document.getElementById('downloadZipBtn').disabled = true;
             document.getElementById('downloadPdfBtn').disabled = true;
-            document.getElementById('headerDownloadBtn').disabled = true;
             document.getElementById('stopBtn').style.display = 'block';
 
             showProgress(true, 'Đang phân tích...');
 
             const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut';
+            const prefix = document.getElementById('outputPrefix').value || 'cut_';
             
             updateProgress(0, `Tìm thấy ${segments.length} file...`);
 
@@ -2083,73 +2480,45 @@
             let failed = 0;
             let originalCount = 0;
 
-            const tasks = segments.map((seg, idx) => {
-                const maxWidth = Math.max(...seg.blocks.map(b => b.width));
-                let totalHeight = seg.endY - seg.startY;
-                
-                seg.blocks.forEach(block => {
-                    block.cropRegions.forEach(region => {
-                        if (region.endY > seg.startY && region.startY < seg.endY) {
-                            const overlapStart = Math.max(region.startY, seg.startY);
-                            const overlapEnd = Math.min(region.endY, seg.endY);
-                            totalHeight -= (overlapEnd - overlapStart);
+            if (isIOS) {
+                for (let i = 0; i < segments.length; i++) {
+                    if (shouldStop) break;
+
+                    const filename = `${prefix}${String(i + 1).padStart(3, '0')}.jpg`;
+                    
+                    try {
+                        const blobOrFile = await processSegment(segments[i], false);
+                        
+                        if (blobOrFile instanceof File) {
+                            originalCount++;
                         }
-                    });
-                });
-                
-                const estimatedPixels = maxWidth * totalHeight;
-                
-                // NEW: Auto add underscore
-                const filename = `${prefix}_${String(idx + 1).padStart(3, '0')}.jpg`;
-                
-                return {
-                    segment: seg,
-                    filename,
-                    index: idx,
-                    estimatedPixels
-                };
-            });
-
-            const largeImageThreshold = 10000000;
-            const largeTasks = tasks.filter(t => t.estimatedPixels > largeImageThreshold);
-            const smallTasks = tasks.filter(t => t.estimatedPixels <= largeImageThreshold);
-
-            console.log(`📊 Large images: ${largeTasks.length}, Small images: ${smallTasks.length}`);
-
-            for (let task of largeTasks) {
-                if (shouldStop) break;
-
-                try {
-                    const blobOrFile = await processSegment(task.segment, false);
-                    
-                    if (blobOrFile instanceof File) {
-                        originalCount++;
+                        
+                        const url = URL.createObjectURL(blobOrFile);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        
+                        completed++;
+                        await sleep(500);
+                    } catch (err) {
+                        console.error('Error:', filename, err);
+                        showToast(err.message, true, 5000);
+                        failed++;
                     }
-                    
-                    const url = URL.createObjectURL(blobOrFile);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = task.filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    
-                    await sleep(isIOS ? 1500 : 800);
-                    URL.revokeObjectURL(url);
-                    
-                    completed++;
-                } catch (err) {
-                    console.error('Error:', task.filename, err);
-                    failed++;
+
+                    const percent = (completed + failed) / segments.length * 100;
+                    updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
                 }
+            } else {
+                const queue = segments.map((seg, idx) => ({
+                    segment: seg,
+                    filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
+                    index: idx
+                }));
 
-                const percent = (completed + failed) / segments.length * 100;
-                updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount} | Lỗi: ${failed}`);
-            }
-
-            if (!shouldStop && smallTasks.length > 0) {
-                const threads = Math.min(2, smallTasks.length);
-                const queue = [...smallTasks];
+                const threads = Math.min(5, segments.length);
 
                 const worker = async (q) => {
                     while (q.length > 0 && !shouldStop) {
@@ -2167,21 +2536,19 @@
                             const a = document.createElement('a');
                             a.href = url;
                             a.download = task.filename;
-                            document.body.appendChild(a);
                             a.click();
-                            document.body.removeChild(a);
-                            
-                            await sleep(isIOS ? 600 : 300);
                             URL.revokeObjectURL(url);
                             
                             completed++;
+                            await sleep(100);
                         } catch (err) {
                             console.error('Error:', task.filename, err);
+                            showToast(err.message, true, 5000);
                             failed++;
                         }
 
                         const percent = (completed + failed) / segments.length * 100;
-                        updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount} | Lỗi: ${failed}`);
+                        updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
                     }
                 };
 
@@ -2193,10 +2560,8 @@
             
             if (shouldStop) {
                 showToast(`⏹️ Đã dừng! Tải được: ${completed}/${segments.length}`, true);
-            } else if (failed > 0) {
-                showToast(`⚠️ Hoàn thành với ${failed} lỗi! Thành công: ${completed}/${segments.length}`, true, 5000);
             } else {
-                showToast(`✅ Hoàn thành! ${completed} ảnh (${originalCount} gốc)`);
+                showToast(`✅ Hoàn thành! ${completed} ảnh (${originalCount} gốc, ${failed} lỗi)`);
             }
             
             isProcessing = false;
@@ -2204,11 +2569,10 @@
             document.getElementById('downloadAllBtn').disabled = false;
             document.getElementById('downloadZipBtn').disabled = false;
             document.getElementById('downloadPdfBtn').disabled = false;
-            document.getElementById('headerDownloadBtn').disabled = false;
             document.getElementById('stopBtn').style.display = 'none';
         }
 
-        // ==================== DOWNLOAD ZIP (FIXED FILENAME) ====================
+        // ==================== DOWNLOAD ZIP ====================
         async function downloadZIP() {
             if (imageBlocks.length === 0) return;
             if (isProcessing) return;
@@ -2219,13 +2583,12 @@
             document.getElementById('downloadAllBtn').disabled = true;
             document.getElementById('downloadZipBtn').disabled = true;
             document.getElementById('downloadPdfBtn').disabled = true;
-            document.getElementById('headerDownloadBtn').disabled = true;
             document.getElementById('stopBtn').style.display = 'block';
 
             showProgress(true, 'Đang tạo ảnh...');
 
             const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut';
+            const prefix = document.getElementById('outputPrefix').value || 'cut_';
             
             const zip = new JSZip();
             let completed = 0;
@@ -2234,7 +2597,7 @@
 
             const queue = segments.map((seg, idx) => ({
                 segment: seg,
-                filename: `${prefix}_${String(idx + 1).padStart(3, '0')}.jpg`, // NEW: Auto underscore
+                filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
                 index: idx
             }));
 
@@ -2276,7 +2639,6 @@
                 document.getElementById('downloadAllBtn').disabled = false;
                 document.getElementById('downloadZipBtn').disabled = false;
                 document.getElementById('downloadPdfBtn').disabled = false;
-                document.getElementById('headerDownloadBtn').disabled = false;
                 document.getElementById('stopBtn').style.display = 'none';
                 return;
             }
@@ -2293,7 +2655,7 @@
             const url = URL.createObjectURL(zipBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${prefix}_output.zip`; // NEW: Auto underscore
+            a.download = `${prefix}output.zip`;
             a.click();
             URL.revokeObjectURL(url);
 
@@ -2305,11 +2667,10 @@
             document.getElementById('downloadAllBtn').disabled = false;
             document.getElementById('downloadZipBtn').disabled = false;
             document.getElementById('downloadPdfBtn').disabled = false;
-            document.getElementById('headerDownloadBtn').disabled = false;
             document.getElementById('stopBtn').style.display = 'none';
         }
 
-        // ==================== DOWNLOAD PDF (FIXED FILENAME) ====================
+        // ==================== DOWNLOAD PDF ====================
         async function downloadPDF() {
             if (imageBlocks.length === 0) return;
             if (isProcessing) return;
@@ -2320,13 +2681,12 @@
             document.getElementById('downloadAllBtn').disabled = true;
             document.getElementById('downloadZipBtn').disabled = true;
             document.getElementById('downloadPdfBtn').disabled = true;
-            document.getElementById('headerDownloadBtn').disabled = true;
             document.getElementById('stopBtn').style.display = 'block';
 
             showProgress(true, 'Đang tạo ảnh cho PDF...');
 
             const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut';
+            const prefix = document.getElementById('outputPrefix').value || 'cut_';
             
             let completed = 0;
             let failed = 0;
@@ -2367,7 +2727,6 @@
                 document.getElementById('downloadAllBtn').disabled = false;
                 document.getElementById('downloadZipBtn').disabled = false;
                 document.getElementById('downloadPdfBtn').disabled = false;
-                document.getElementById('headerDownloadBtn').disabled = false;
                 document.getElementById('stopBtn').style.display = 'none';
                 return;
             }
@@ -2411,7 +2770,7 @@
             const url = URL.createObjectURL(pdfBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${prefix}_output.pdf`; // NEW: Auto underscore
+            a.download = `${prefix}output.pdf`;
             a.click();
             URL.revokeObjectURL(url);
 
@@ -2423,7 +2782,6 @@
             document.getElementById('downloadAllBtn').disabled = false;
             document.getElementById('downloadZipBtn').disabled = false;
             document.getElementById('downloadPdfBtn').disabled = false;
-            document.getElementById('headerDownloadBtn').disabled = false;
             document.getElementById('stopBtn').style.display = 'none';
         }
 
@@ -2546,8 +2904,6 @@
                     enableSharpen = config.enableSharpen;
                     document.getElementById('sharpenCheck').checked = enableSharpen;
                 }
-                
-                updateFilenamePreview(); // NEW
             } catch (err) {
                 console.error('Config load error:', err);
             }
