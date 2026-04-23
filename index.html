@@ -10,919 +10,288 @@
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/pica@9.0.1/dist/pica.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #eee;
-            overflow: hidden;
-            touch-action: pan-y pinch-zoom;
-            -webkit-user-select: none;
-            user-select: none;
+            background: #0a0a0a; color: #eee; overflow: hidden;
+            touch-action: pan-y pinch-zoom; -webkit-user-select: none; user-select: none;
         }
-        
         .header {
-            background: #111;
-            padding: 12px 15px;
-            border-bottom: 2px solid #00d4ff;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            background: #111; padding: 12px 15px; border-bottom: 2px solid #00d4ff;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
         }
-        
-        .header h1 {
-            font-size: 16px;
-            color: #00d4ff;
-        }
-        
-        .header-controls {
-            display: flex;
-            gap: 8px;
-        }
-        
+        .header h1 { font-size: 16px; color: #00d4ff; }
+        .header-controls { display: flex; gap: 8px; }
         .menu-toggle {
-            background: #00d4ff;
-            color: #000;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 18px;
-            cursor: pointer;
-            display: none;
+            background: #00d4ff; color: #000; border: none; padding: 8px 12px;
+            border-radius: 6px; font-size: 18px; cursor: pointer; display: none;
         }
-        
-        @media (max-width: 768px) {
-            .menu-toggle {
-                display: block;
-            }
-        }
-        
-        .main-container {
-            display: flex;
-            height: calc(100vh - 52px);
-            position: relative;
-        }
-        
+        @media (max-width: 768px) { .menu-toggle { display: block; } }
+        .main-container { display: flex; height: calc(100vh - 52px); position: relative; }
         .sidebar {
-            width: 100%;
-            max-width: 320px;
-            background: #111;
-            border-right: 2px solid #222;
-            overflow-y: auto;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
-            padding: 15px;
-            transition: transform 0.3s;
+            width: 100%; max-width: 320px; background: #111; border-right: 2px solid #222;
+            overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
+            padding: 15px; transition: transform 0.3s;
+            scrollbar-width: auto; scrollbar-color: #00d4ff #0a0a0a;
         }
-        
-        .sidebar::-webkit-scrollbar {
-            width: 12px;
-        }
-        
-        .sidebar::-webkit-scrollbar-track {
-            background: #0a0a0a;
-            border-radius: 6px;
-        }
-        
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #00d4ff;
-            border-radius: 6px;
-            border: 2px solid #0a0a0a;
-        }
-        
-        .sidebar::-webkit-scrollbar-thumb:hover {
-            background: #00ff88;
-        }
-        
-        .sidebar {
-            scrollbar-width: auto;
-            scrollbar-color: #00d4ff #0a0a0a;
-        }
-        
+        .sidebar::-webkit-scrollbar { width: 12px; }
+        .sidebar::-webkit-scrollbar-track { background: #0a0a0a; border-radius: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 6px; border: 2px solid #0a0a0a; }
         @media (max-width: 768px) {
             .sidebar {
-                position: fixed;
-                top: 52px;
-                left: 0;
-                bottom: 0;
-                z-index: 90;
-                transform: translateX(-100%);
-                box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+                position: fixed; top: 52px; left: 0; bottom: 0; z-index: 90;
+                transform: translateX(-100%); box-shadow: 2px 0 10px rgba(0,0,0,0.5);
             }
-            
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            
-            .sidebar::-webkit-scrollbar {
-                width: 16px;
-            }
-            
-            .sidebar::-webkit-scrollbar-thumb {
-                background: #00d4ff;
-                border: 3px solid #0a0a0a;
-            }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar::-webkit-scrollbar { width: 16px; }
         }
-        
         .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 52px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 85;
+            display: none; position: fixed; top: 52px; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); z-index: 85;
         }
-        
-        @media (max-width: 768px) {
-            .sidebar-overlay.visible {
-                display: block;
-            }
-        }
-        
+        @media (max-width: 768px) { .sidebar-overlay.visible { display: block; } }
         .section {
-            background: #1a1a1a;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-left: 3px solid #00d4ff;
+            background: #1a1a1a; border-radius: 8px; padding: 15px;
+            margin-bottom: 15px; border-left: 3px solid #00d4ff;
         }
-        
-        .section h3 {
-            color: #00d4ff;
-            font-size: 14px;
-            margin-bottom: 12px;
+        .section h3 { color: #00d4ff; font-size: 14px; margin-bottom: 12px; }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
+        input[type="text"], input[type="number"], input[type="range"] {
+            padding: 10px; background: #0a0a0a; border: 1px solid #333;
+            border-radius: 6px; color: #fff; font-size: 14px; width: 100%;
         }
-        
-        .input-group {
-            margin-bottom: 12px;
-        }
-        
-        .input-group label {
-            display: block;
-            font-size: 12px;
-            color: #888;
-            margin-bottom: 5px;
-        }
-        
-        input[type="text"],
-        input[type="number"],
-        input[type="range"] {
-            padding: 10px;
-            background: #0a0a0a;
-            border: 1px solid #333;
-            border-radius: 6px;
-            color: #fff;
-            font-size: 14px;
-            width: 100%;
-        }
-        
-        input[type="number"] {
-            width: 80px;
-        }
-        
-        .range-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
+        input[type="number"] { width: 80px; }
+        .range-group { display: flex; align-items: center; gap: 10px; }
         .reset-width-btn {
-            background: #ffa502;
-            color: #000;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            flex-shrink: 0;
-            touch-action: manipulation;
+            background: #ffa502; color: #000; border: none; padding: 8px 12px;
+            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
+            flex-shrink: 0; touch-action: manipulation;
         }
-        
-        .reset-width-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: #0a0a0a;
-            border-radius: 6px;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        
-        .checkbox-group label {
-            cursor: pointer;
-            margin: 0;
-            flex: 1;
-            font-size: 12px;
-        }
-        
+        .reset-width-btn:active { transform: scale(0.95); }
         .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            transition: all 0.2s;
-            touch-action: manipulation;
+            width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer;
+            font-weight: bold; font-size: 14px; transition: all 0.2s; touch-action: manipulation;
         }
-        
-        .btn:active {
-            transform: scale(0.98);
-        }
-        
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-primary { background: #00d4ff; color: #000; }
         .btn-success { background: #00ff88; color: #000; }
         .btn-danger { background: #ff4757; color: #fff; }
         .btn-warning { background: #ffa502; color: #000; }
         .btn-info { background: #5f27cd; color: #fff; }
         .btn-purple { background: #9b59b6; color: #fff; }
-        
-        .mode-toggle {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        
+        .mode-toggle { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .mode-btn {
-            padding: 10px;
-            background: #0a0a0a;
-            border: 2px solid #333;
-            border-radius: 6px;
-            color: #888;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-            text-align: center;
-            touch-action: manipulation;
+            padding: 10px; background: #0a0a0a; border: 2px solid #333; border-radius: 6px;
+            color: #888; cursor: pointer; font-size: 12px; transition: all 0.2s;
+            text-align: center; touch-action: manipulation;
         }
-        
-        .mode-btn.active {
-            background: #00d4ff;
-            border-color: #00d4ff;
-            color: #000;
-        }
-        
+        .mode-btn.active { background: #00d4ff; border-color: #00d4ff; color: #000; }
         .canvas-area {
-            flex: 1;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            background: #0a0a0a;
-            position: relative;
+            flex: 1; overflow: auto; -webkit-overflow-scrolling: touch;
+            background: #0a0a0a; position: relative;
         }
-        
-        .canvas-area::-webkit-scrollbar {
-            width: 20px;
-        }
-        
-        .canvas-area::-webkit-scrollbar-track {
-            background: #0a0a0a;
-            border-radius: 10px;
-        }
-        
-        .canvas-area::-webkit-scrollbar-thumb {
-            background: #00d4ff;
-            border-radius: 10px;
-            border: 4px solid #0a0a0a;
-        }
-        
-        .canvas-area::-webkit-scrollbar-thumb:hover {
-            background: #00ff88;
-        }
-        
-        @media (max-width: 768px) {
-            .canvas-area::-webkit-scrollbar {
-                width: 24px;
-            }
-            
-            .canvas-area::-webkit-scrollbar-thumb {
-                border: 5px solid #0a0a0a;
-            }
-        }
-        
+        .canvas-area::-webkit-scrollbar { width: 20px; }
+        .canvas-area::-webkit-scrollbar-track { background: #0a0a0a; border-radius: 10px; }
+        .canvas-area::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 10px; border: 4px solid #0a0a0a; }
         .canvas-area.drag-over {
             background: rgba(0, 212, 255, 0.1);
-            outline: 5px dashed #00d4ff;
-            outline-offset: -10px;
+            outline: 5px dashed #00d4ff; outline-offset: -10px;
         }
-        
-        .canvas-viewport {
-            min-height: 100%;
-            padding: 15px;
-            transform-origin: top left;
-        }
-        
+        .canvas-viewport { min-height: 100%; padding: 15px; transform-origin: top left; }
         .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: calc(100vh - 200px);
-            color: #333;
-            padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: calc(100vh - 200px); color: #333; padding: 20px;
         }
-        
-        .empty-state-icon {
-            font-size: 60px;
-            margin-bottom: 15px;
-        }
-        
-        .empty-state h2 {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        
-        .file-input-wrapper {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
+        .empty-state-icon { font-size: 60px; margin-bottom: 15px; }
+        .empty-state h2 { font-size: 18px; margin-bottom: 10px; }
+        .file-input-wrapper { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .file-input-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background: #00d4ff;
-            color: #000;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            touch-action: manipulation;
+            display: inline-block; padding: 12px 24px; background: #00d4ff; color: #000;
+            border-radius: 8px; font-weight: bold; cursor: pointer; touch-action: manipulation;
         }
-        
-        .file-input-btn:active {
-            transform: scale(0.98);
-        }
-        
-        .zip-input-btn {
-            background: #9b59b6;
-            color: #fff;
-        }
-        
-        .image-block {
-            background: #000;
-            overflow: hidden;
-            margin-bottom: 0;
-            border: none;
-            position: relative;
-        }
-        
-        .image-content {
-            position: relative;
-            background: #000;
-            line-height: 0;
-        }
-        
+        .file-input-btn:active { transform: scale(0.98); }
+        .zip-input-btn { background: #9b59b6; color: #fff; }
+        .image-block { background: #000; overflow: hidden; margin-bottom: 0; border: none; position: relative; }
+        .image-content { position: relative; background: #000; line-height: 0; }
         .image-chunk {
-            display: block;
-            width: 100%;
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
-            background-position: top left;
-            pointer-events: all;
-            cursor: crosshair;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-user-drag: none;
-            touch-action: none;
-            position: relative;
+            display: block; width: 100%; background-size: 100% 100%;
+            background-repeat: no-repeat; background-position: top left;
+            pointer-events: all; cursor: crosshair; user-select: none;
+            -webkit-user-select: none; -webkit-user-drag: none;
+            touch-action: none; position: relative;
         }
-        
-        .merge-divider {
-            position: relative;
-            padding: 12px 0;
-            text-align: center;
-            display: block;
-        }
-        
+        .merge-divider { position: relative; padding: 12px 0; text-align: center; display: block; }
         .merge-btn-inline {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #00d4ff;
-            color: #000;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-            touch-action: manipulation;
+            display: inline-block; padding: 10px 20px; background: #00d4ff; color: #000;
+            border: none; border-radius: 20px; cursor: pointer; font-weight: bold;
+            font-size: 13px; touch-action: manipulation;
         }
-        
-        .merge-btn-inline:active {
-            transform: scale(0.95);
-        }
-        
+        .merge-btn-inline:active { transform: scale(0.95); }
         .merge-line-container {
-            position: relative;
-            height: 2px;
-            background: #00ff88;
-            display: none;
-            align-items: center;
-            justify-content: center;
+            position: relative; height: 2px; background: #00ff88;
+            display: none; align-items: center; justify-content: center;
         }
-        
-        .merge-line-container.visible {
-            display: flex;
-        }
-        
+        .merge-line-container.visible { display: flex; }
         .unmerge-btn {
-            position: absolute;
-            background: #00ff88;
-            color: #000;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 14px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-            z-index: 10;
-            touch-action: manipulation;
+            position: absolute; background: #00ff88; color: #000; border: none;
+            padding: 6px 14px; border-radius: 14px; font-size: 12px; font-weight: bold;
+            cursor: pointer; white-space: nowrap; z-index: 10; touch-action: manipulation;
         }
-        
-        .cut-line-overlay {
-            position: absolute;
-            left: 0;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            pointer-events: none;
-        }
-        
+        .cut-line-overlay { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
         .cut-line-container {
-            position: absolute;
-            left: 0;
-            right: 0;
-            height: 44px;
-            margin-top: -22px;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            cursor: ns-resize;
-            pointer-events: all;
-            touch-action: none;
+            position: absolute; left: 0; right: 0; height: 44px; margin-top: -22px;
+            z-index: 100; display: flex; align-items: center; cursor: ns-resize;
+            pointer-events: all; touch-action: none;
         }
-        
-        .cut-line {
-            flex: 1;
-            height: 0;
-            border-top: 3px dashed #ff1493;
-            position: relative;
-        }
-        
+        .cut-line { flex: 1; height: 0; border-top: 3px dashed #ff1493; position: relative; }
         .cut-line-label {
-            position: absolute;
-            left: 50%;
-            top: -25px;
-            transform: translateX(-50%);
-            background: #ff1493;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            white-space: nowrap;
-            pointer-events: none;
+            position: absolute; left: 50%; top: -25px; transform: translateX(-50%);
+            background: #ff1493; color: white; padding: 4px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: bold; white-space: nowrap; pointer-events: none;
         }
-        
         .crop-region {
-            position: absolute;
-            left: 0;
-            right: 0;
-            background: repeating-linear-gradient(
-                45deg,
-                rgba(255, 0, 0, 0.3),
-                rgba(255, 0, 0, 0.3) 10px,
-                rgba(200, 0, 0, 0.3) 10px,
-                rgba(200, 0, 0, 0.3) 20px
-            );
-            border-top: 3px solid #ff0000;
-            border-bottom: 3px solid #ff0000;
-            pointer-events: all;
-            z-index: 85;
-            min-height: 30px;
+            position: absolute; left: 0; right: 0;
+            background: repeating-linear-gradient(45deg, rgba(255,0,0,0.3), rgba(255,0,0,0.3) 10px, rgba(200,0,0,0.3) 10px, rgba(200,0,0,0.3) 20px);
+            border-top: 3px solid #ff0000; border-bottom: 3px solid #ff0000;
+            pointer-events: all; z-index: 85; min-height: 30px;
         }
-        
-        .crop-drag-top,
-        .crop-drag-bottom {
-            position: absolute;
-            left: 0;
-            right: 0;
-            height: 22px;
-            cursor: ns-resize;
-            z-index: 90;
-            touch-action: none;
+        .crop-drag-top, .crop-drag-bottom {
+            position: absolute; left: 0; right: 0; height: 22px;
+            cursor: ns-resize; z-index: 90; touch-action: none;
         }
-        
-        .crop-drag-top {
-            top: -11px;
-        }
-        
-        .crop-drag-bottom {
-            bottom: -11px;
-        }
-        
+        .crop-drag-top { top: -11px; }
+        .crop-drag-bottom { bottom: -11px; }
         .crop-label {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #ff0000;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            white-space: nowrap;
-            pointer-events: none;
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: #ff0000; color: white; padding: 6px 12px; border-radius: 12px;
+            font-size: 11px; font-weight: bold; white-space: nowrap; pointer-events: none;
         }
-        
         .remove-cut-btn, .remove-crop-btn {
-            background: #ff1493;
-            color: white;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 14px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-left: 10px;
-            white-space: nowrap;
-            touch-action: manipulation;
+            background: #ff1493; color: white; border: none; padding: 6px 14px;
+            border-radius: 14px; font-size: 12px; font-weight: bold; cursor: pointer;
+            margin-left: 10px; white-space: nowrap; touch-action: manipulation;
         }
-        
         .remove-crop-btn {
-            background: #ff0000;
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: all;
+            background: #ff0000; position: absolute; left: 10px; top: 50%;
+            transform: translateY(-50%); pointer-events: all; margin-left: 0;
         }
-        
+        .stats-bar {
+            background: #0d0d0d; border: 1px solid #222; border-radius: 8px;
+            padding: 10px 12px; margin-bottom: 12px; font-size: 11px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        }
+        .stat-item { display: flex; flex-direction: column; gap: 2px; }
+        .stat-label { color: #555; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { color: #00d4ff; font-weight: bold; font-size: 13px; }
+        .stat-value.green { color: #00ff88; }
+        .stat-value.orange { color: #ffa502; }
         .mode-indicator {
-            position: fixed;
-            top: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.95);
-            padding: 10px 20px;
-            border-radius: 20px;
-            border: 2px solid #00d4ff;
-            font-size: 13px;
-            font-weight: bold;
-            z-index: 1000;
-            display: none;
-            max-width: 90%;
-            text-align: center;
+            position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.95); padding: 10px 20px; border-radius: 20px;
+            border: 2px solid #00d4ff; font-size: 13px; font-weight: bold;
+            z-index: 1000; display: none; max-width: 90%; text-align: center;
         }
-        
-        .mode-indicator.visible {
-            display: block;
-        }
-        
+        .mode-indicator.visible { display: block; }
         .toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.95);
-            color: #00ff88;
-            padding: 12px 24px;
-            border-radius: 25px;
-            border: 2px solid #00ff88;
-            font-size: 14px;
-            font-weight: bold;
-            z-index: 10000;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            max-width: 90%;
-            text-align: center;
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.95); color: #00ff88; padding: 12px 24px;
+            border-radius: 25px; border: 2px solid #00ff88; font-size: 14px;
+            font-weight: bold; z-index: 10000; opacity: 0; transition: opacity 0.3s;
+            pointer-events: none; max-width: 90%; text-align: center;
         }
-        
-        .toast.visible {
-            opacity: 1;
-        }
-        
-        .toast.error {
-            color: #ff4757;
-            border-color: #ff4757;
-        }
-        
+        .toast.visible { opacity: 1; }
+        .toast.error { color: #ff4757; border-color: #ff4757; }
         .zoom-controls {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.95);
-            padding: 8px;
-            border-radius: 12px;
-            border: 2px solid #00d4ff;
-            display: flex;
-            gap: 5px;
-            z-index: 80;
+            position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.95);
+            padding: 8px; border-radius: 12px; border: 2px solid #00d4ff;
+            display: flex; gap: 5px; z-index: 80;
         }
-        
-        @media (max-width: 768px) {
-            .zoom-controls {
-                bottom: 10px;
-                right: 10px;
-                padding: 6px;
-            }
-        }
-        
         .zoom-btn {
-            width: 44px;
-            height: 44px;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            color: #00d4ff;
-            cursor: pointer;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
+            width: 44px; height: 44px; background: #1a1a1a; border: 1px solid #333;
+            border-radius: 8px; color: #00d4ff; cursor: pointer; font-size: 20px;
+            display: flex; align-items: center; justify-content: center; touch-action: manipulation;
         }
-        
-        @media (max-width: 768px) {
-            .zoom-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
-        }
-        
-        .zoom-btn:active {
-            background: #00d4ff;
-            color: #000;
-        }
-        
+        .zoom-btn:active { background: #00d4ff; color: #000; }
         .zoom-level {
-            color: #00d4ff;
-            font-size: 13px;
-            font-weight: bold;
-            padding: 0 8px;
-            display: flex;
-            align-items: center;
-            min-width: 50px;
-            justify-content: center;
+            color: #00d4ff; font-size: 13px; font-weight: bold; padding: 0 8px;
+            display: flex; align-items: center; min-width: 50px; justify-content: center;
         }
-        
         .progress-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95); display: none; align-items: center;
+            justify-content: center; z-index: 9999; padding: 20px;
         }
-        
-        .progress-overlay.visible {
-            display: flex;
-        }
-        
+        .progress-overlay.visible { display: flex; }
         .progress-box {
-            background: #1a1a1a;
-            padding: 25px;
-            border-radius: 10px;
-            border: 2px solid #00d4ff;
-            width: 100%;
-            max-width: 400px;
+            background: #1a1a1a; padding: 25px; border-radius: 10px;
+            border: 2px solid #00d4ff; width: 100%; max-width: 400px;
         }
-        
-        .progress-bar {
-            width: 100%;
-            height: 30px;
-            background: #0a0a0a;
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 15px 0;
-        }
-        
+        .progress-bar { width: 100%; height: 30px; background: #0a0a0a; border-radius: 15px; overflow: hidden; margin: 15px 0; }
         .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00d4ff, #00ff88);
-            width: 0%;
-            transition: width 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 12px;
+            height: 100%; background: linear-gradient(90deg, #00d4ff, #00ff88);
+            width: 0%; transition: width 0.3s; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; font-size: 12px; color: #000;
         }
-        
-        .progress-text {
-            text-align: center;
-            color: #888;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-        
-        .progress-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
+        .progress-text { text-align: center; color: #888; font-size: 13px; margin-bottom: 10px; }
+        .progress-actions { display: flex; gap: 10px; margin-top: 15px; }
         .image-info-tooltip {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(0, 0, 0, 0.85);
-            color: #00d4ff;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            z-index: 50;
-            pointer-events: none;
-            max-width: calc(100% - 10px);
-            word-break: break-all;
+            position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.85);
+            color: #00d4ff; padding: 6px 12px; border-radius: 6px; font-size: 11px;
+            z-index: 50; pointer-events: none; max-width: calc(100% - 10px); word-break: break-all;
         }
-        
-        /* Folder Picker Modal */
         .folder-picker-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95); display: none; align-items: center;
+            justify-content: center; z-index: 10000; padding: 20px;
         }
-        
-        .folder-picker-overlay.visible {
-            display: flex;
-        }
-        
+        .folder-picker-overlay.visible { display: flex; }
         .folder-picker-box {
-            background: #1a1a1a;
-            padding: 25px;
-            border-radius: 10px;
-            border: 2px solid #9b59b6;
-            width: 100%;
-            max-width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
+            background: #1a1a1a; padding: 25px; border-radius: 10px;
+            border: 2px solid #9b59b6; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto;
         }
-        
-        .folder-picker-box h3 {
-            color: #9b59b6;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-        
-        .folder-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
+        .folder-picker-box h3 { color: #9b59b6; margin-bottom: 15px; font-size: 18px; }
+        .folder-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         .folder-item {
-            background: #0a0a0a;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 2px solid #333;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            background: #0a0a0a; padding: 12px 15px; border-radius: 8px; border: 2px solid #333;
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px;
         }
-        
-        .folder-item:hover {
-            border-color: #9b59b6;
-            background: #1a1a1a;
+        .folder-item:hover { border-color: #9b59b6; background: #1a1a1a; }
+        .folder-item.selected { border-color: #9b59b6; background: #9b59b6; color: #fff; }
+        .folder-icon { font-size: 20px; }
+        .folder-info { flex: 1; }
+        .folder-name { font-weight: bold; font-size: 14px; }
+        .folder-count { font-size: 11px; color: #888; margin-top: 3px; }
+        .folder-item.selected .folder-count { color: #fff; }
+        .folder-picker-actions { display: flex; gap: 10px; }
+        .random-group { display: flex; gap: 8px; align-items: center; }
+        .random-id-display {
+            flex: 1; padding: 10px; background: #0a0a0a; border: 1px solid #333;
+            border-radius: 6px; color: #00ff88; font-size: 14px; font-weight: bold;
+            text-align: center; user-select: all;
         }
-        
-        .folder-item.selected {
-            border-color: #9b59b6;
-            background: #9b59b6;
-            color: #fff;
+        .random-btn {
+            background: #00ff88; color: #000; border: none; padding: 10px 15px;
+            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
+            white-space: nowrap; touch-action: manipulation;
         }
-        
-        .folder-icon {
-            font-size: 20px;
+        .random-btn:active { transform: scale(0.95); }
+        .checkbox-group {
+            display: flex; align-items: center; gap: 8px; margin-top: 8px;
+            padding: 8px; background: #0a0a0a; border-radius: 6px;
         }
-        
-        .folder-info {
-            flex: 1;
+        .checkbox-group input[type="checkbox"] {
+            width: 18px; height: 18px; cursor: pointer;
         }
-        
-        .folder-name {
-            font-weight: bold;
-            font-size: 14px;
+        .checkbox-group label {
+            color: #888; font-size: 12px; cursor: pointer; margin: 0;
         }
-        
-        .folder-count {
-            font-size: 11px;
-            color: #888;
-            margin-top: 3px;
-        }
-        
-        .folder-item.selected .folder-count {
-            color: #fff;
-        }
-        
-        .folder-picker-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        @supports (-webkit-touch-callout: none) {
-            .canvas-area {
-                -webkit-overflow-scrolling: touch;
-            }
-        }
-        
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #0a0a0a;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #00d4ff;
-        }
-        
         @media (max-width: 768px) {
-            .header h1 {
-                font-size: 14px;
-            }
-            
-            .section {
-                padding: 12px;
-            }
-            
-            .section h3 {
-                font-size: 13px;
-            }
-            
-            .btn {
-                padding: 10px;
-                font-size: 13px;
-            }
-            
-            .canvas-viewport {
-                padding: 10px;
-            }
-            
-            .empty-state-icon {
-                font-size: 50px;
-            }
-            
-            .empty-state h2 {
-                font-size: 16px;
-            }
+            .header h1 { font-size: 14px; }
+            .section { padding: 12px; }
+            .canvas-viewport { padding: 10px; }
         }
     </style>
 </head>
@@ -931,9 +300,9 @@
         <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
         <h1>✂️ WEBTOON CUT PRO</h1>
         <div class="header-controls">
-            <button class="btn btn-primary" onclick="exportConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">💾</button>
-            <button class="btn btn-warning" onclick="importConfig()" style="width: auto; padding: 8px 12px; font-size: 12px;">📂</button>
-            <input type="file" id="configInput" accept=".json" style="display: none;">
+            <button class="btn btn-primary" onclick="exportConfig()" style="width:auto;padding:8px 12px;font-size:12px;">💾</button>
+            <button class="btn btn-warning" onclick="importConfig()" style="width:auto;padding:8px 12px;font-size:12px;">📂</button>
+            <input type="file" id="configInput" accept=".json" style="display:none;">
         </div>
     </div>
 
@@ -941,9 +310,33 @@
 
     <div class="main-container">
         <div class="sidebar" id="sidebar">
+
+            <!-- STATS -->
+            <div class="section">
+                <h3>📊 Thống Kê</h3>
+                <div class="stats-bar" id="statsBar">
+                    <div class="stat-item">
+                        <span class="stat-label">Ảnh gốc</span>
+                        <span class="stat-value" id="statOriginal">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Sau ghép</span>
+                        <span class="stat-value green" id="statMerged">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Đường cắt</span>
+                        <span class="stat-value orange" id="statCuts">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Output</span>
+                        <span class="stat-value green" id="statOutput">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONFIG -->
             <div class="section">
                 <h3>⚙️ Cấu Hình</h3>
-                
                 <div class="input-group">
                     <label>Width đầu ra (px):</label>
                     <div class="range-group">
@@ -951,27 +344,31 @@
                         <input type="number" id="targetWidthInput" min="720" max="10000" value="1440" step="10">
                         <button class="reset-width-btn" onclick="resetToOriginalWidth()" title="Reset về size ảnh gốc">↺</button>
                     </div>
-                    <p style="font-size: 10px; color: #555; margin-top: 5px; padding-left: 10px;">
-                        Ảnh gốc: <span id="originalWidthLabel">--</span>px
+                    <p style="font-size:10px;color:#555;margin-top:5px;">
+                        Ảnh gốc: <span id="originalWidthLabel">--</span>px (max của tất cả ảnh)
                     </p>
                 </div>
-
                 <div class="input-group">
-                    <label>Tên file output:</label>
-                    <input type="text" id="outputPrefix" value="cut_" placeholder="cut_">
+                    <label>Prefix tên file output:</label>
+                    <input type="text" id="outputPrefix" value="cut" placeholder="cut">
                 </div>
-
                 <div class="input-group">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="sharpenCheck" onchange="toggleSharpen()">
-                        <label for="sharpenCheck">✨ Sharpen khi upscale (PDF)</label>
+                    <label>Random ID:</label>
+                    <div class="random-group">
+                        <div class="random-id-display" id="randomIdDisplay">abc12</div>
+                        <button class="random-btn" onclick="generateNewRandomID()">🎲 Random</button>
                     </div>
-                    <p style="font-size: 10px; color: #555; margin-top: 5px; padding-left: 10px;">
-                        Làm nét nhẹ khi phóng to ảnh
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="useRandomId" checked>
+                        <label for="useRandomId">Sử dụng Random ID (tắt để tên file đơn giản)</label>
+                    </div>
+                    <p style="font-size:10px;color:#555;margin-top:4px;">
+                        Bật: cut_abc12_0001.jpg | Tắt: cut_0001.jpg
                     </p>
                 </div>
             </div>
 
+            <!-- MODE -->
             <div class="section">
                 <h3>🎬 Chế Độ</h3>
                 <div class="mode-toggle">
@@ -979,35 +376,29 @@
                     <div class="mode-btn" id="cutMode" onclick="setMode('cut')">✂️ Cắt</div>
                     <div class="mode-btn" id="cropMode" onclick="setMode('crop')">🗑️ Crop</div>
                 </div>
-                
-                <div id="cutSettings" style="display: none; margin-top: 10px;">
-                    <p style="font-size: 11px; color: #666;">
-                        Tap vào ảnh để đặt đường cắt<br>
-                        Kéo đường cắt để điều chỉnh
-                    </p>
+                <div id="cutSettings" style="display:none;margin-top:10px;">
+                    <p style="font-size:11px;color:#666;">Tap vào ảnh để đặt đường cắt<br>Kéo đường cắt để điều chỉnh</p>
                 </div>
-                
-                <div id="cropSettings" style="display: none; margin-top: 10px;">
-                    <p style="font-size: 11px; color: #666;">
-                        Tap 2 lần: Y1 → Y2 để tạo vùng crop<br>
-                        Kéo viền để điều chỉnh
-                    </p>
+                <div id="cropSettings" style="display:none;margin-top:10px;">
+                    <p style="font-size:11px;color:#666;">Tap 2 lần: Y1 → Y2 để tạo vùng crop<br>Kéo viền để điều chỉnh</p>
                 </div>
             </div>
 
+            <!-- ACTIONS -->
             <div class="section">
                 <h3>📥 Hành Động</h3>
                 <button class="btn btn-info" onclick="mergeAll()">🔗 Ghép Tất Cả</button>
-                <button class="btn btn-warning" onclick="unmergeAll()" style="margin-top: 10px;">↔️ Bỏ Ghép Tất Cả</button>
-                <button class="btn btn-warning" onclick="clearAllCuts()" style="margin-top: 10px;">✂️ Xóa Tất Cả Cắt</button>
+                <button class="btn btn-warning" onclick="unmergeAll()" style="margin-top:10px;">↔️ Bỏ Ghép Tất Cả</button>
+                <button class="btn btn-warning" onclick="clearAllCuts()" style="margin-top:10px;">✂️ Xóa Tất Cả Cắt</button>
             </div>
 
+            <!-- EXPORT -->
             <div class="section">
                 <h3>💾 Xuất File</h3>
-                <button class="btn btn-success" onclick="downloadAllJPG()" id="downloadAllBtn" style="margin-bottom: 10px;">💾 Download All JPG</button>
-                <button class="btn btn-primary" onclick="downloadZIP()" id="downloadZipBtn" style="margin-bottom: 10px;">📦 Download ZIP</button>
-                <button class="btn btn-purple" onclick="downloadPDF()" id="downloadPdfBtn">📄 Nén PDF</button>
-                <button class="btn btn-danger" onclick="clearAll()" style="margin-top: 15px;">🗑️ Xóa Tất Cả</button>
+                <button class="btn btn-success" onclick="downloadAllJPG()" id="downloadAllBtn" style="margin-bottom:10px;">💾 Download All JPG</button>
+                <button class="btn btn-primary" onclick="downloadZIP()" id="downloadZipBtn" style="margin-bottom:10px;">📦 Download ZIP</button>
+                <button class="btn btn-purple" onclick="downloadPDF()" id="downloadPdfBtn">📄 Xuất PDF</button>
+                <button class="btn btn-danger" onclick="clearAll()" style="margin-top:15px;">🗑️ Xóa Tất Cả</button>
             </div>
         </div>
 
@@ -1015,14 +406,13 @@
             <div class="canvas-viewport" id="canvasViewport">
                 <div class="empty-state">
                     <div class="empty-state-icon">🎨</div>
-                    <h2 style="color: #333;">Chọn ảnh để bắt đầu</h2>
-                    <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ PC, iOS & Android</p>
+                    <h2 style="color:#333;">Chọn ảnh để bắt đầu</h2>
+                    <p style="color:#222;font-size:13px;margin:10px 0;">Hỗ trợ PC, iOS & Android</p>
                     <div class="file-input-wrapper">
                         <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
-                        <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
-                        
+                        <input type="file" id="fileInput" multiple accept="image/*" style="display:none;">
                         <label class="file-input-btn zip-input-btn" for="zipInput">📦 Chọn ZIP</label>
-                        <input type="file" id="zipInput" accept=".zip" style="display: none;">
+                        <input type="file" id="zipInput" accept=".zip" style="display:none;">
                     </div>
                 </div>
             </div>
@@ -1041,18 +431,16 @@
 
     <div class="progress-overlay" id="progressOverlay">
         <div class="progress-box">
-            <h3 style="color: #00d4ff; margin-bottom: 10px;">⏳ Đang xử lý...</h3>
+            <h3 style="color:#00d4ff;margin-bottom:10px;">⏳ Đang xử lý...</h3>
             <div class="progress-text" id="progressText">Đang chuẩn bị...</div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill">0%</div>
-            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill">0%</div></div>
             <div class="progress-actions">
-                <button class="btn btn-danger" onclick="stopProcess()" id="stopBtn" style="display: none;">⏹️ Dừng</button>
+                <button class="btn btn-danger" onclick="stopProcess()" id="stopBtn" style="display:none;">⏹️ Dừng</button>
             </div>
         </div>
     </div>
 
-    <!-- Folder Picker Modal -->
+    <!-- Folder Picker -->
     <div class="folder-picker-overlay" id="folderPickerOverlay">
         <div class="folder-picker-box">
             <h3>📁 Chọn Folder</h3>
@@ -1064,1912 +452,1548 @@
         </div>
     </div>
 
-    <script>
-        // ==================== CANVAS LIMIT ====================
-        const MAX_CANVAS_HEIGHT = 16384;
-        const MAX_CANVAS_WIDTH = 16384;
-        const TILE_HEIGHT = 4096;
+<script>
+// ==================== CONSTANTS ====================
+const MAX_CANVAS_HEIGHT = 16384;
+const MAX_CANVAS_WIDTH  = 16384;
+const TILE_HEIGHT       = 4096;
 
-        // ==================== DETECT PLATFORM ====================
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        const isMobile = isIOS || isAndroid;
+// ==================== PLATFORM ====================
+const isIOS     = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isMobile  = isIOS || isAndroid;
 
-        console.log('🔍 Platform:', { isIOS, isAndroid, isMobile });
+// ==================== STATE ====================
+let imageBlocks       = [];
+let mergeStates       = [];
+let currentMode       = 'view';
+let currentZoom       = 1.0;
+let targetWidthValue  = 1440;
+let jpegQualityValue  = 1.0;
+let draggedCutLine    = null;
+let draggedCropRegion = null;
+let cropTempPoint     = null;
+let isProcessing      = false;
+let shouldStop        = false;
+let originalImageWidth= null;
+let picaInstance      = null;
+let currentRandomID   = '';
 
-        // ==================== STATE ====================
-        let imageBlocks = [];
-        let mergeStates = [];
-        let currentMode = 'view';
-        let currentZoom = 1.0;
-        let targetWidthValue = 1440;
-        let jpegQualityValue = 1.0;
-        let enableSharpen = false;
-        let draggedCutLine = null;
-        let draggedCropRegion = null;
-        let cropTempPoint = null;
-        let isProcessing = false;
-        let shouldStop = false;
-        let originalImageWidth = null;
-        let picaInstance = null;
+// ZIP state
+let currentZipData      = null;
+let selectedFolderPath  = null;
 
-        // ZIP state
-        let currentZipData = null;
-        let selectedFolderPath = null;
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.pica) {
+        picaInstance = window.pica();
+        console.log('✅ Pica loaded');
+    }
+    setupDragDrop();
+    setupRangeInputs();
+    setupZoomControls();
+    setupFileInput();
+    setupZipInput();
+    applyZoom();
+    generateNewRandomID();
 
-        // ==================== TOAST ====================
-        function showToast(message, isError = false, duration = 3000) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.toggle('error', isError);
-            toast.classList.add('visible');
-            
-            setTimeout(() => {
-                toast.classList.remove('visible');
-            }, duration);
+    document.addEventListener('contextmenu', e => {
+        if (e.target.classList.contains('image-chunk')) e.preventDefault();
+    });
+    document.addEventListener('dragstart', e => {
+        if (e.target.classList.contains('image-chunk')) e.preventDefault();
+    });
+    setupTouchSupport();
+});
+
+// ==================== RANDOM ID ====================
+function generateRandomID() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 5; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+function generateNewRandomID() {
+    currentRandomID = generateRandomID();
+    document.getElementById('randomIdDisplay').textContent = currentRandomID;
+    console.log('🎲 New Random ID:', currentRandomID);
+}
+
+// ==================== TOAST ====================
+function showToast(msg, isError = false, dur = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', isError);
+    t.classList.add('visible');
+    setTimeout(() => t.classList.remove('visible'), dur);
+}
+
+// ==================== SIDEBAR ====================
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('visible');
+}
+function closeSidebar() {
+    if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('visible');
+    }
+}
+
+// ==================== FILE INPUT ====================
+function setupFileInput() {
+    document.getElementById('fileInput').addEventListener('change', async e => {
+        const files = Array.from(e.target.files);
+        if (files.length) await handleFilesUpload(files);
+        e.target.value = '';
+    });
+}
+
+// ==================== ZIP INPUT ====================
+function setupZipInput() {
+    document.getElementById('zipInput').addEventListener('change', async e => {
+        const file = e.target.files[0];
+        if (file) await handleZipUpload(file);
+        e.target.value = '';
+    });
+}
+
+async function handleZipUpload(file) {
+    showProgress(true, 'Đang đọc ZIP...');
+    try {
+        const zip = new JSZip();
+        const zipContent = await zip.loadAsync(file);
+        const folders = analyzeFolderStructure(zipContent);
+        if (!folders.length) {
+            showProgress(false);
+            showToast('⚠️ Không tìm thấy ảnh trong ZIP', true);
+            return;
         }
-
-        // ==================== SHARPEN ====================
-        function toggleSharpen() {
-            enableSharpen = document.getElementById('sharpenCheck').checked;
-            console.log('Sharpen:', enableSharpen);
-        }
-
-        function applySharpenFilter(canvas, ctx, originalWidth, scaledWidth) {
-            if (scaledWidth <= originalWidth) return;
-            
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const pixels = imageData.data;
-            const width = canvas.width;
-            const height = canvas.height;
-            
-            const kernel = [
-                0, -0.25, 0,
-                -0.25, 2, -0.25,
-                0, -0.25, 0
-            ];
-            
-            const output = new Uint8ClampedArray(pixels);
-            
-            for (let y = 1; y < height - 1; y++) {
-                for (let x = 1; x < width - 1; x++) {
-                    for (let c = 0; c < 3; c++) {
-                        let sum = 0;
-                        
-                        sum += pixels[((y - 1) * width + (x - 1)) * 4 + c] * kernel[0];
-                        sum += pixels[((y - 1) * width + x) * 4 + c] * kernel[1];
-                        sum += pixels[((y - 1) * width + (x + 1)) * 4 + c] * kernel[2];
-                        sum += pixels[(y * width + (x - 1)) * 4 + c] * kernel[3];
-                        sum += pixels[(y * width + x) * 4 + c] * kernel[4];
-                        sum += pixels[(y * width + (x + 1)) * 4 + c] * kernel[5];
-                        sum += pixels[((y + 1) * width + (x - 1)) * 4 + c] * kernel[6];
-                        sum += pixels[((y + 1) * width + x) * 4 + c] * kernel[7];
-                        sum += pixels[((y + 1) * width + (x + 1)) * 4 + c] * kernel[8];
-                        
-                        output[(y * width + x) * 4 + c] = sum;
-                    }
-                }
-            }
-            
-            imageData.data.set(output);
-            ctx.putImageData(imageData, 0, 0);
-        }
-
-        // ==================== INIT ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.pica) {
-                picaInstance = window.pica();
-                console.log('✅ Pica.js loaded (Lanczos3 resize)');
-            } else {
-                console.warn('⚠️ Pica.js không load được, fallback canvas thường');
-            }
-            
-            setupDragDrop();
-            setupRangeInputs();
-            setupZoomControls();
-            setupFileInput();
-            setupZipInput();
-            applyZoom();
-            
-            document.addEventListener('contextmenu', (e) => {
-                if (e.target.classList.contains('image-chunk')) {
-                    e.preventDefault();
-                }
-            });
-            
-            document.addEventListener('dragstart', (e) => {
-                if (e.target.classList.contains('image-chunk')) {
-                    e.preventDefault();
-                }
-            });
-
-            setupTouchSupport();
-        });
-
-        // ==================== MOBILE SIDEBAR ====================
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('visible');
-        }
-
-        function closeSidebar() {
-            if (window.innerWidth <= 768) {
-                document.getElementById('sidebar').classList.remove('open');
-                document.getElementById('sidebarOverlay').classList.remove('visible');
-            }
-        }
-
-        // ==================== ZIP INPUT ====================
-        function setupZipInput() {
-            document.getElementById('zipInput').addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    await handleZipUpload(file);
-                }
-                e.target.value = '';
-            });
-        }
-
-        async function handleZipUpload(file) {
-            showProgress(true, 'Đang đọc ZIP...');
-            
-            try {
-                const zip = new JSZip();
-                const zipContent = await zip.loadAsync(file);
-                
-                // Phân tích cấu trúc folder
-                const folders = analyzeFolderStructure(zipContent);
-                
-                console.log('📦 ZIP Structure:', folders);
-                
-                if (folders.length === 0) {
-                    showProgress(false);
-                    showToast('⚠️ Không tìm thấy ảnh trong ZIP', true);
-                    return;
-                }
-                
-                currentZipData = { zipContent, folders };
-                
-                if (folders.length === 1) {
-                    // Chỉ có 1 folder → tự động chọn
-                    selectedFolderPath = folders[0].path;
-                    await loadImagesFromZip();
-                } else {
-                    // Nhiều folder → hiện modal chọn
-                    showProgress(false);
-                    showFolderPicker(folders);
-                }
-                
-            } catch (err) {
-                console.error('ZIP error:', err);
-                showProgress(false);
-                showToast('❌ Lỗi đọc ZIP: ' + err.message, true);
-            }
-        }
-
-        function analyzeFolderStructure(zipContent) {
-            const folderMap = new Map();
-            
-            zipContent.forEach((relativePath, file) => {
-                if (file.dir) return; // Bỏ qua thư mục rỗng
-                
-                // Chỉ lấy file ảnh
-                if (!isImageFile(relativePath)) return;
-                
-                // Lấy folder path
-                const parts = relativePath.split('/');
-                let folderPath = '';
-                
-                if (parts.length > 1) {
-                    // Có folder
-                    folderPath = parts.slice(0, -1).join('/');
-                } else {
-                    // Root level
-                    folderPath = '/';
-                }
-                
-                if (!folderMap.has(folderPath)) {
-                    folderMap.set(folderPath, {
-                        path: folderPath,
-                        name: folderPath === '/' ? '📁 Root' : folderPath.split('/').pop(),
-                        images: []
-                    });
-                }
-                
-                folderMap.get(folderPath).images.push(relativePath);
-            });
-            
-            // Sort folders
-            const folders = Array.from(folderMap.values());
-            folders.forEach(folder => {
-                folder.images.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-            });
-            
-            folders.sort((a, b) => a.path.localeCompare(b.path));
-            
-            return folders;
-        }
-
-        function isImageFile(path) {
-            return path.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
-        }
-
-        function showFolderPicker(folders) {
-            const overlay = document.getElementById('folderPickerOverlay');
-            const list = document.getElementById('folderList');
-            
-            list.innerHTML = '';
-            selectedFolderPath = null;
-            
-            folders.forEach(folder => {
-                const item = document.createElement('div');
-                item.className = 'folder-item';
-                item.onclick = () => selectFolder(folder.path);
-                
-                item.innerHTML = `
-                    <div class="folder-icon">📁</div>
-                    <div class="folder-info">
-                        <div class="folder-name">${folder.name}</div>
-                        <div class="folder-count">${folder.images.length} ảnh</div>
-                    </div>
-                `;
-                
-                item.dataset.path = folder.path;
-                list.appendChild(item);
-            });
-            
-            overlay.classList.add('visible');
-            document.getElementById('confirmFolderBtn').disabled = true;
-        }
-
-        function selectFolder(path) {
-            selectedFolderPath = path;
-            
-            // Update UI
-            document.querySelectorAll('.folder-item').forEach(item => {
-                item.classList.toggle('selected', item.dataset.path === path);
-            });
-            
-            document.getElementById('confirmFolderBtn').disabled = false;
-        }
-
-        function closeFolderPicker() {
-            document.getElementById('folderPickerOverlay').classList.remove('visible');
-            currentZipData = null;
-            selectedFolderPath = null;
-        }
-
-        async function confirmFolderSelection() {
-            if (!selectedFolderPath) return;
-            
-            closeFolderPicker();
+        currentZipData = { zipContent, folders };
+        if (folders.length === 1) {
+            selectedFolderPath = folders[0].path;
             await loadImagesFromZip();
-        }
-
-        async function loadImagesFromZip() {
-            if (!currentZipData || !selectedFolderPath) return;
-            
-            showProgress(true, 'Đang load ảnh từ ZIP...');
-            
-            const { zipContent, folders } = currentZipData;
-            const folder = folders.find(f => f.path === selectedFolderPath);
-            
-            if (!folder) {
-                showProgress(false);
-                showToast('❌ Không tìm thấy folder', true);
-                return;
-            }
-            
-            const imageFiles = [];
-            const isFirstUpload = imageBlocks.length === 0;
-            
-            for (let i = 0; i < folder.images.length; i++) {
-                const imagePath = folder.images[i];
-                const zipEntry = zipContent.file(imagePath);
-                
-                if (!zipEntry) continue;
-                
-                updateProgress((i / folder.images.length) * 100, `Đang load ${i + 1}/${folder.images.length}...`);
-                
-                try {
-                    const blob = await zipEntry.async('blob');
-                    const fileName = imagePath.split('/').pop();
-                    
-                    // Tạo File object
-                    const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
-                    
-                    const dims = await getImageDimensions(file);
-                    
-                    if (isFirstUpload && i === 0) {
-                        originalImageWidth = dims.width;
-                        document.getElementById('originalWidthLabel').textContent = dims.width;
-                        
-                        let autoWidth = dims.width;
-                        if (autoWidth < 720) autoWidth = 720;
-                        if (autoWidth > 10000) autoWidth = 10000;
-                        
-                        targetWidthValue = autoWidth;
-                        document.getElementById('targetWidth').value = autoWidth;
-                        document.getElementById('targetWidthInput').value = autoWidth;
-                    }
-                    
-                    imageBlocks.push({
-                        id: Date.now() + i + Math.random(),
-                        file: file,
-                        name: fileName,
-                        width: dims.width,
-                        height: dims.height,
-                        url: URL.createObjectURL(file),
-                        cutPoints: [],
-                        cropRegions: []
-                    });
-                    
-                } catch (err) {
-                    console.error('Error loading image:', imagePath, err);
-                }
-            }
-            
-            mergeStates = [];
-            for (let i = 0; i < imageBlocks.length - 1; i++) {
-                mergeStates.push({ index: i, merged: false });
-            }
-            
-            updateProgress(100, 'Hoàn thành!');
-            await sleep(300);
+        } else {
             showProgress(false);
-            
-            renderAll();
-            closeSidebar();
-            
-            showToast(`✅ Đã load ${imageBlocks.length} ảnh từ ZIP`);
-            
-            // Cleanup
-            currentZipData = null;
-            selectedFolderPath = null;
+            showFolderPicker(folders);
         }
+    } catch (err) {
+        showProgress(false);
+        showToast('❌ Lỗi đọc ZIP: ' + err.message, true);
+    }
+}
 
-        // ==================== FILE INPUT ====================
-        function setupFileInput() {
-            document.getElementById('fileInput').addEventListener('change', async (e) => {
-                const files = Array.from(e.target.files);
-                if (files.length > 0) {
-                    await handleFilesUpload(files);
-                }
-                e.target.value = '';
+function analyzeFolderStructure(zipContent) {
+    const folderMap = new Map();
+    zipContent.forEach((relativePath, file) => {
+        if (file.dir) return;
+        if (!isImageFile(relativePath)) return;
+        const parts = relativePath.split('/');
+        const folderPath = parts.length > 1 ? parts.slice(0, -1).join('/') : '/';
+        if (!folderMap.has(folderPath)) {
+            folderMap.set(folderPath, {
+                path: folderPath,
+                name: folderPath === '/' ? '📁 Root' : folderPath.split('/').pop(),
+                images: []
             });
         }
+        folderMap.get(folderPath).images.push(relativePath);
+    });
+    const folders = Array.from(folderMap.values());
+    folders.forEach(f => f.images.sort((a, b) => a.localeCompare(b, undefined, { numeric: true })));
+    folders.sort((a, b) => a.path.localeCompare(b.path));
+    return folders;
+}
 
-        // ==================== DRAG & DROP ====================
-        function setupDragDrop() {
-            if (isMobile) return;
+function isImageFile(path) {
+    return /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(path);
+}
 
-            const canvasArea = document.getElementById('canvasArea');
-            let dragCounter = 0;
-            
-            canvasArea.addEventListener('dragenter', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dragCounter++;
-                canvasArea.classList.add('drag-over');
+function showFolderPicker(folders) {
+    const list = document.getElementById('folderList');
+    list.innerHTML = '';
+    selectedFolderPath = null;
+    folders.forEach(folder => {
+        const item = document.createElement('div');
+        item.className = 'folder-item';
+        item.dataset.path = folder.path;
+        item.onclick = () => selectFolder(folder.path);
+        item.innerHTML = `<div class="folder-icon">📁</div>
+            <div class="folder-info">
+                <div class="folder-name">${folder.name}</div>
+                <div class="folder-count">${folder.images.length} ảnh</div>
+            </div>`;
+        list.appendChild(item);
+    });
+    document.getElementById('folderPickerOverlay').classList.add('visible');
+    document.getElementById('confirmFolderBtn').disabled = true;
+}
+
+function selectFolder(path) {
+    selectedFolderPath = path;
+    document.querySelectorAll('.folder-item').forEach(item => {
+        item.classList.toggle('selected', item.dataset.path === path);
+    });
+    document.getElementById('confirmFolderBtn').disabled = false;
+}
+
+function closeFolderPicker() {
+    document.getElementById('folderPickerOverlay').classList.remove('visible');
+    currentZipData = null;
+    selectedFolderPath = null;
+}
+
+async function confirmFolderSelection() {
+    if (!selectedFolderPath) return;
+    closeFolderPicker();
+    await loadImagesFromZip();
+}
+
+async function loadImagesFromZip() {
+    if (!currentZipData || !selectedFolderPath) return;
+    showProgress(true, 'Đang load ảnh từ ZIP...');
+    const { zipContent, folders } = currentZipData;
+    const folder = folders.find(f => f.path === selectedFolderPath);
+    if (!folder) { showProgress(false); showToast('❌ Không tìm thấy folder', true); return; }
+
+    const isFirst = imageBlocks.length === 0;
+    for (let i = 0; i < folder.images.length; i++) {
+        const imagePath = folder.images[i];
+        const zipEntry = zipContent.file(imagePath);
+        if (!zipEntry) continue;
+        updateProgress((i / folder.images.length) * 100, `Đang load ${i+1}/${folder.images.length}...`);
+        try {
+            const blob = await zipEntry.async('blob');
+            const fileName = imagePath.split('/').pop();
+            const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+            const dims = await getImageDimensions(file);
+            if (isFirst && imageBlocks.length === 0) {
+                setInitialWidth(dims.width);
+            } else if (dims.width > originalImageWidth) {
+                originalImageWidth = dims.width;
+                document.getElementById('originalWidthLabel').textContent = originalImageWidth;
+            }
+            imageBlocks.push({
+                id: Date.now() + i + Math.random(),
+                file, name: fileName,
+                width: dims.width, height: dims.height,
+                url: URL.createObjectURL(file),
+                cutPoints: [], cropRegions: []
             });
+        } catch (err) { console.error('Error loading:', imagePath, err); }
+    }
+    rebuildMergeStates();
+    updateProgress(100, 'Hoàn thành!');
+    await sleep(300);
+    showProgress(false);
+    renderAll();
+    updateStats();
+    closeSidebar();
+    showToast(`✅ Đã load ${imageBlocks.length} ảnh từ ZIP`);
+    currentZipData = null;
+    selectedFolderPath = null;
+}
 
-            canvasArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dragCounter--;
-                if (dragCounter === 0) {
-                    canvasArea.classList.remove('drag-over');
-                }
+// ==================== DRAG & DROP ====================
+function setupDragDrop() {
+    if (isMobile) return;
+    const area = document.getElementById('canvasArea');
+    let dragCounter = 0;
+    area.addEventListener('dragenter', e => { e.preventDefault(); e.stopPropagation(); dragCounter++; area.classList.add('drag-over'); });
+    area.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); if (--dragCounter === 0) area.classList.remove('drag-over'); });
+    area.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
+    area.addEventListener('drop', async e => {
+        e.preventDefault(); e.stopPropagation();
+        dragCounter = 0; area.classList.remove('drag-over');
+        const files = [];
+        if (e.dataTransfer.items) {
+            for (let item of e.dataTransfer.items)
+                if (item.kind === 'file') files.push(item.getAsFile());
+        } else {
+            files.push(...e.dataTransfer.files);
+        }
+        const zipFiles = files.filter(f => f.name.endsWith('.zip'));
+        if (zipFiles.length) { await handleZipUpload(zipFiles[0]); return; }
+        const existing = new Set(imageBlocks.map(b => b.name));
+        const newFiles = files.filter(f => !existing.has(f.name));
+        if (newFiles.length) await handleFilesUpload(newFiles);
+    });
+}
+
+// ==================== FILE UPLOAD ====================
+async function handleFilesUpload(files) {
+    showProgress(true, 'Đang tải ảnh...');
+    const imageFiles = files.filter(f => {
+        const uuidPat = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidPat.test(f.name.replace(/\.[^.]+$/, ''))) return false;
+        return f.type.startsWith('image/') || isImageFile(f.name);
+    });
+    if (!imageFiles.length) { showProgress(false); showToast('⚠️ Không có ảnh hợp lệ', true); return; }
+    imageFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    const isFirst = imageBlocks.length === 0;
+    for (let i = 0; i < imageFiles.length; i++) {
+        updateProgress((i / imageFiles.length) * 100, `Đang tải ${i+1}/${imageFiles.length}...`);
+        try {
+            const dims = await getImageDimensions(imageFiles[i]);
+            if (isFirst && imageBlocks.length === 0) {
+                setInitialWidth(dims.width);
+            } else if (dims.width > originalImageWidth) {
+                originalImageWidth = dims.width;
+                document.getElementById('originalWidthLabel').textContent = originalImageWidth;
+            }
+            imageBlocks.push({
+                id: Date.now() + i + Math.random(),
+                file: imageFiles[i], name: imageFiles[i].name,
+                width: dims.width, height: dims.height,
+                url: URL.createObjectURL(imageFiles[i]),
+                cutPoints: [], cropRegions: []
             });
+        } catch (err) { console.error('Error:', imageFiles[i].name, err); }
+    }
+    rebuildMergeStates();
+    updateProgress(100, 'Hoàn thành!');
+    await sleep(300);
+    showProgress(false);
+    renderAll();
+    updateStats();
+    closeSidebar();
+}
 
-            canvasArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
+function setInitialWidth(w) {
+    originalImageWidth = w;
+    document.getElementById('originalWidthLabel').textContent = w;
+    let auto = Math.max(720, Math.min(10000, w));
+    targetWidthValue = auto;
+    document.getElementById('targetWidth').value = auto;
+    document.getElementById('targetWidthInput').value = auto;
+}
 
-            canvasArea.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dragCounter = 0;
-                canvasArea.classList.remove('drag-over');
-                
-                const files = [];
-                
-                if (e.dataTransfer.items) {
-                    for (let i = 0; i < e.dataTransfer.items.length; i++) {
-                        if (e.dataTransfer.items[i].kind === 'file') {
-                            const file = e.dataTransfer.items[i].getAsFile();
-                            if (file) files.push(file);
-                        }
-                    }
-                } else {
-                    files.push(...e.dataTransfer.files);
-                }
-                
-                // Check nếu có file ZIP
-                const zipFiles = files.filter(f => f.name.endsWith('.zip'));
-                if (zipFiles.length > 0) {
-                    await handleZipUpload(zipFiles[0]);
-                    return;
-                }
-                
-                const existingNames = new Set(imageBlocks.map(b => b.name));
-                const newFiles = files.filter(f => !existingNames.has(f.name));
-                
-                if (newFiles.length > 0) {
-                    await handleFilesUpload(newFiles);
-                }
-            });
+function rebuildMergeStates() {
+    const oldStates = mergeStates.slice();
+    mergeStates = [];
+    for (let i = 0; i < imageBlocks.length - 1; i++) {
+        mergeStates.push({ index: i, merged: oldStates[i] ? oldStates[i].merged : false });
+    }
+}
+
+function getImageDimensions(file) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => { URL.revokeObjectURL(url); resolve({ width: img.width, height: img.height }); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load')); };
+        img.src = url;
+    });
+}
+
+// ==================== STATS ====================
+function updateStats() {
+    const total = imageBlocks.length;
+    document.getElementById('statOriginal').textContent = total;
+
+    let groups = 0;
+    if (total > 0) {
+        let i = 0;
+        while (i < total) {
+            groups++;
+            while (i < total - 1 && mergeStates[i] && mergeStates[i].merged) i++;
+            i++;
         }
+    }
+    document.getElementById('statMerged').textContent = groups;
 
-        // ==================== FILE UPLOAD ====================
-        async function handleFilesUpload(files) {
-            showProgress(true, 'Đang tải ảnh...');
-            
-            const imageFiles = files.filter(f => {
-                const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-                if (uuidPattern.test(f.name.replace(/\.[^.]+$/, ''))) {
-                    console.log('🚫 Chặn upload blob UUID:', f.name);
-                    return false;
-                }
-                
-                return f.type.startsWith('image/') || 
-                       f.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
-            });
+    const totalCuts = imageBlocks.reduce((s, b) => s + b.cutPoints.length, 0);
+    document.getElementById('statCuts').textContent = totalCuts;
 
-            if (imageFiles.length === 0) {
-                showProgress(false);
-                showToast('⚠️ Không có ảnh hợp lệ', true);
-                return;
-            }
+    const segs = total > 0 ? buildOutputSegments() : [];
+    document.getElementById('statOutput').textContent = segs.length;
+}
 
-            imageFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
+// ==================== RENDER ====================
+function renderAll() {
+    const viewport = document.getElementById('canvasViewport');
+    viewport.innerHTML = '';
 
-            const isFirstUpload = imageBlocks.length === 0;
+    if (!imageBlocks.length) {
+        viewport.innerHTML = `
+        <div class="empty-state">
+            <div class="empty-state-icon">🎨</div>
+            <h2 style="color:#333;">Chọn ảnh để bắt đầu</h2>
+            <p style="color:#222;font-size:13px;margin:10px 0;">Hỗ trợ PC, iOS & Android</p>
+            <div class="file-input-wrapper">
+                <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
+                <label class="file-input-btn zip-input-btn" for="zipInput">📦 Chọn ZIP</label>
+            </div>
+        </div>`;
+        updateStats();
+        return;
+    }
 
-            for (let i = 0; i < imageFiles.length; i++) {
-                updateProgress((i / imageFiles.length) * 100, `Đang tải ${i + 1}/${imageFiles.length}...`);
-                
-                try {
-                    const dims = await getImageDimensions(imageFiles[i]);
-                    
-                    if (isFirstUpload && i === 0) {
-                        originalImageWidth = dims.width;
-                        document.getElementById('originalWidthLabel').textContent = dims.width;
-                        
-                        let autoWidth = dims.width;
-                        if (autoWidth < 720) autoWidth = 720;
-                        if (autoWidth > 10000) autoWidth = 10000;
-                        
-                        targetWidthValue = autoWidth;
-                        document.getElementById('targetWidth').value = autoWidth;
-                        document.getElementById('targetWidthInput').value = autoWidth;
-                    }
-                    
-                    imageBlocks.push({
-                        id: Date.now() + i + Math.random(),
-                        file: imageFiles[i],
-                        name: imageFiles[i].name,
-                        width: dims.width,
-                        height: dims.height,
-                        url: URL.createObjectURL(imageFiles[i]),
-                        cutPoints: [],
-                        cropRegions: []
-                    });
-                } catch (err) {
-                    console.error('Error:', imageFiles[i].name, err);
-                }
-            }
-
-            mergeStates = [];
-            for (let i = 0; i < imageBlocks.length - 1; i++) {
-                mergeStates.push({ index: i, merged: false });
-            }
-
-            updateProgress(100, 'Hoàn thành!');
-            await sleep(300);
-            showProgress(false);
-
-            renderAll();
-            closeSidebar();
-        }
-
-        function getImageDimensions(file) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                const url = URL.createObjectURL(file);
-                
-                img.onload = () => {
-                    URL.revokeObjectURL(url);
-                    resolve({ width: img.width, height: img.height });
-                };
-                
-                img.onerror = () => {
-                    URL.revokeObjectURL(url);
-                    reject(new Error('Failed to load'));
-                };
-                
-                img.src = url;
-            });
-        }
-
-        // ==================== RENDER ====================
-        function renderAll() {
-            const viewport = document.getElementById('canvasViewport');
-            viewport.innerHTML = '';
-
-            if (imageBlocks.length === 0) {
-                viewport.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🎨</div>
-                        <h2 style="color: #333;">Chọn ảnh để bắt đầu</h2>
-                        <p style="color: #222; font-size: 13px; margin: 10px 0;">Hỗ trợ PC, iOS & Android</p>
-                        <div class="file-input-wrapper">
-                            <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
-                            
-                            <label class="file-input-btn zip-input-btn" for="zipInput">📦 Chọn ZIP</label>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-
-            imageBlocks.forEach((block, index) => {
-                const blockEl = createBlockElement(block, index);
-                viewport.appendChild(blockEl);
-
-                if (index < imageBlocks.length - 1) {
-                    const isMerged = mergeStates[index].merged;
-                    
-                    if (isMerged) {
-                        const mergeLine = document.createElement('div');
-                        mergeLine.className = 'merge-line-container visible';
-                        mergeLine.innerHTML = `<button class="unmerge-btn" onclick="toggleMerge(${index})">Bỏ ghép</button>`;
-                        viewport.appendChild(mergeLine);
-                    } else {
-                        const mergeDiv = document.createElement('div');
-                        mergeDiv.className = 'merge-divider';
-                        mergeDiv.innerHTML = `<button class="merge-btn-inline" onclick="toggleMerge(${index})">🔗 Ghép Ảnh</button>`;
-                        viewport.appendChild(mergeDiv);
-                    }
-                }
-            });
-        }
-
-        function createBlockElement(block, index) {
-            const div = document.createElement('div');
-            div.className = 'image-block';
-            div.id = `block-${index}`;
-            div.dataset.blockIndex = index;
-
-            const content = document.createElement('div');
-            content.className = 'image-content';
-            
-            const imgDiv = document.createElement('div');
-            imgDiv.className = 'image-chunk';
-            imgDiv.style.backgroundImage = `url("${block.url}")`;
-            imgDiv.dataset.blockIndex = index;
-            
-            const aspectRatio = (block.height / block.width) * 100;
-            imgDiv.style.paddingBottom = aspectRatio + '%';
-            
-            imgDiv.onclick = (e) => handleImageClick(e, block, index);
-            
-            const tempImg = new Image();
-            tempImg.onload = () => {
-                renderAllOverlays(block, index, content);
-            };
-            tempImg.src = block.url;
-            
-            content.appendChild(imgDiv);
-
-            const tooltip = document.createElement('div');
-            tooltip.className = 'image-info-tooltip';
-            tooltip.textContent = `${String(index + 1).padStart(3, '0')}. ${block.name}`;
-            content.appendChild(tooltip);
-
-            const cutOverlay = document.createElement('div');
-            cutOverlay.className = 'cut-line-overlay';
-            cutOverlay.id = `cut-overlay-${index}`;
-            content.appendChild(cutOverlay);
-
-            div.appendChild(content);
-            return div;
-        }
-
-        function renderAllOverlays(block, blockIndex, container) {
-            const cutOverlay = document.getElementById(`cut-overlay-${blockIndex}`);
-            if (!cutOverlay) return;
-            
-            cutOverlay.innerHTML = '';
-            
-            const imgDiv = container.querySelector('.image-chunk');
-            if (!imgDiv || !imgDiv.offsetHeight) return;
-            
-            const scale = imgDiv.offsetHeight / block.height;
-            
-            block.cutPoints.forEach(y => {
-                const cutLine = createCutLine(block, y, blockIndex, scale);
-                cutOverlay.appendChild(cutLine);
-            });
-            
-            block.cropRegions.forEach((region, idx) => {
-                const crop = createCropRegion(block, region, blockIndex, idx, scale);
-                cutOverlay.appendChild(crop);
-            });
-        }
-
-        function createCutLine(block, y, blockIndex, scale) {
-            const container = document.createElement('div');
-            container.className = 'cut-line-container';
-            container.style.top = (y * scale) + 'px';
-            container.dataset.blockIndex = blockIndex;
-            container.dataset.cutY = y;
-            
-            const startDrag = (e) => {
-                if (e.target.classList.contains('remove-cut-btn')) return;
-                const touch = e.touches ? e.touches[0] : e;
-                startDragCutLine(touch, block, y, blockIndex);
-                if (e.preventDefault) e.preventDefault();
-            };
-            
-            container.addEventListener('mousedown', startDrag);
-            container.addEventListener('touchstart', startDrag, { passive: false });
-            
-            const line = document.createElement('div');
-            line.className = 'cut-line';
-            
-            const label = document.createElement('div');
-            label.className = 'cut-line-label';
-            label.textContent = `${y}px`;
-            line.appendChild(label);
-            
-            const btn = document.createElement('button');
-            btn.className = 'remove-cut-btn';
-            btn.textContent = 'Bỏ';
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                removeCutPoint(block, y);
-            };
-            
-            container.appendChild(line);
-            container.appendChild(btn);
-            
-            return container;
-        }
-
-        function createCropRegion(block, region, blockIndex, regionIdx, scale) {
-            const container = document.createElement('div');
-            container.className = 'crop-region';
-            container.style.top = (region.startY * scale) + 'px';
-            container.style.height = ((region.endY - region.startY) * scale) + 'px';
-            
-            const label = document.createElement('div');
-            label.className = 'crop-label';
-            label.textContent = `${region.startY}-${region.endY}px`;
-            container.appendChild(label);
-            
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'remove-crop-btn';
-            removeBtn.textContent = 'Bỏ';
-            removeBtn.onclick = () => removeCropRegion(blockIndex, regionIdx);
-            container.appendChild(removeBtn);
-            
-            const topDrag = document.createElement('div');
-            topDrag.className = 'crop-drag-top';
-            const startTopDrag = (e) => {
-                e.stopPropagation();
-                const touch = e.touches ? e.touches[0] : e;
-                startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'top', scale);
-                if (e.preventDefault) e.preventDefault();
-            };
-            topDrag.addEventListener('mousedown', startTopDrag);
-            topDrag.addEventListener('touchstart', startTopDrag, { passive: false });
-            container.appendChild(topDrag);
-            
-            const bottomDrag = document.createElement('div');
-            bottomDrag.className = 'crop-drag-bottom';
-            const startBottomDrag = (e) => {
-                e.stopPropagation();
-                const touch = e.touches ? e.touches[0] : e;
-                startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'bottom', scale);
-                if (e.preventDefault) e.preventDefault();
-            };
-            bottomDrag.addEventListener('mousedown', startBottomDrag);
-            bottomDrag.addEventListener('touchstart', startBottomDrag, { passive: false });
-            container.appendChild(bottomDrag);
-            
-            return container;
-        }
-
-        function handleImageClick(e, block, blockIndex) {
-            const imgDiv = e.target;
-            const rect = imgDiv.getBoundingClientRect();
-            
-            const clickY = (e.clientY - rect.top) / currentZoom;
-            const displayHeight = rect.height / currentZoom;
-            const originalHeight = block.height;
-            const scale = displayHeight / originalHeight;
-            const actualY = Math.round(clickY / scale);
-
-            if (actualY <= 0 || actualY >= block.height) return;
-
-            if (currentMode === 'cut') {
-                if (!block.cutPoints.includes(actualY)) {
-                    block.cutPoints.push(actualY);
-                    block.cutPoints.sort((a, b) => a - b);
-                    const content = imgDiv.closest('.image-content');
-                    renderAllOverlays(block, blockIndex, content);
-                }
-            } else if (currentMode === 'crop') {
-                if (!cropTempPoint) {
-                    cropTempPoint = { blockIndex, y: actualY };
-                    showModeIndicator(`🗑️ Crop: Y1 = ${actualY}px<br>Tap Y2 →`);
-                } else if (cropTempPoint.blockIndex === blockIndex) {
-                    const startY = Math.min(cropTempPoint.y, actualY);
-                    const endY = Math.max(cropTempPoint.y, actualY);
-                    block.cropRegions.push({ startY, endY });
-                    cropTempPoint = null;
-                    hideModeIndicator();
-                    const content = imgDiv.closest('.image-content');
-                    renderAllOverlays(block, blockIndex, content);
-                }
+    imageBlocks.forEach((block, index) => {
+        viewport.appendChild(createBlockElement(block, index));
+        if (index < imageBlocks.length - 1) {
+            const isMerged = mergeStates[index] && mergeStates[index].merged;
+            if (isMerged) {
+                const ml = document.createElement('div');
+                ml.className = 'merge-line-container visible';
+                ml.innerHTML = `<button class="unmerge-btn" onclick="toggleMerge(${index})">Bỏ ghép</button>`;
+                viewport.appendChild(ml);
+            } else {
+                const md = document.createElement('div');
+                md.className = 'merge-divider';
+                md.innerHTML = `<button class="merge-btn-inline" onclick="toggleMerge(${index})">🔗 Ghép Ảnh</button>`;
+                viewport.appendChild(md);
             }
         }
+    });
 
-        function removeCutPoint(block, y) {
-            const index = block.cutPoints.indexOf(y);
-            if (index > -1) {
-                block.cutPoints.splice(index, 1);
-                const blockIndex = imageBlocks.findIndex(b => b.id === block.id);
-                if (blockIndex > -1) {
-                    const blockEl = document.getElementById(`block-${blockIndex}`);
-                    if (blockEl) {
-                        const content = blockEl.querySelector('.image-content');
-                        renderAllOverlays(block, blockIndex, content);
-                    }
-                }
-            }
+    updateStats();
+}
+
+function createBlockElement(block, index) {
+    const div = document.createElement('div');
+    div.className = 'image-block';
+    div.id = `block-${index}`;
+    div.dataset.blockIndex = index;
+
+    const content = document.createElement('div');
+    content.className = 'image-content';
+
+    const imgDiv = document.createElement('div');
+    imgDiv.className = 'image-chunk';
+    imgDiv.style.backgroundImage = `url("${block.url}")`;
+    imgDiv.dataset.blockIndex = index;
+    const aspectRatio = (block.height / block.width) * 100;
+    imgDiv.style.paddingBottom = aspectRatio + '%';
+    imgDiv.onclick = e => handleImageClick(e, block, index);
+
+    const tempImg = new Image();
+    tempImg.onload = () => renderAllOverlays(block, index, content);
+    tempImg.src = block.url;
+
+    content.appendChild(imgDiv);
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'image-info-tooltip';
+    tooltip.textContent = `${String(index+1).padStart(3,'0')}. ${block.name} (${block.width}×${block.height})`;
+    content.appendChild(tooltip);
+
+    const cutOverlay = document.createElement('div');
+    cutOverlay.className = 'cut-line-overlay';
+    cutOverlay.id = `cut-overlay-${index}`;
+    content.appendChild(cutOverlay);
+
+    div.appendChild(content);
+    return div;
+}
+
+function renderAllOverlays(block, blockIndex, container) {
+    const cutOverlay = document.getElementById(`cut-overlay-${blockIndex}`);
+    if (!cutOverlay) return;
+    cutOverlay.innerHTML = '';
+    const imgDiv = container.querySelector('.image-chunk');
+    if (!imgDiv || !imgDiv.offsetHeight) return;
+    const scale = imgDiv.offsetHeight / block.height;
+    block.cutPoints.forEach(y => cutOverlay.appendChild(createCutLine(block, y, blockIndex, scale)));
+    block.cropRegions.forEach((region, idx) => cutOverlay.appendChild(createCropRegion(block, region, blockIndex, idx, scale)));
+}
+
+function createCutLine(block, y, blockIndex, scale) {
+    const container = document.createElement('div');
+    container.className = 'cut-line-container';
+    container.style.top = (y * scale) + 'px';
+    container.dataset.blockIndex = blockIndex;
+    container.dataset.cutY = y;
+
+    const startDrag = e => {
+        if (e.target.classList.contains('remove-cut-btn')) return;
+        const touch = e.touches ? e.touches[0] : e;
+        startDragCutLine(touch, block, y, blockIndex);
+        if (e.preventDefault) e.preventDefault();
+    };
+    container.addEventListener('mousedown', startDrag);
+    container.addEventListener('touchstart', startDrag, { passive: false });
+
+    const line = document.createElement('div');
+    line.className = 'cut-line';
+    const label = document.createElement('div');
+    label.className = 'cut-line-label';
+    label.textContent = `${y}px`;
+    line.appendChild(label);
+
+    const btn = document.createElement('button');
+    btn.className = 'remove-cut-btn';
+    btn.textContent = 'Bỏ';
+    btn.onclick = e => { e.stopPropagation(); removeCutPoint(block, y, blockIndex); };
+
+    container.appendChild(line);
+    container.appendChild(btn);
+    return container;
+}
+
+function createCropRegion(block, region, blockIndex, regionIdx, scale) {
+    const container = document.createElement('div');
+    container.className = 'crop-region';
+    container.style.top = (region.startY * scale) + 'px';
+    container.style.height = ((region.endY - region.startY) * scale) + 'px';
+
+    const label = document.createElement('div');
+    label.className = 'crop-label';
+    label.textContent = `${region.startY}-${region.endY}px`;
+    container.appendChild(label);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-crop-btn';
+    removeBtn.textContent = 'Bỏ';
+    removeBtn.onclick = () => removeCropRegion(blockIndex, regionIdx);
+    container.appendChild(removeBtn);
+
+    const topDrag = document.createElement('div');
+    topDrag.className = 'crop-drag-top';
+    const startTop = e => { e.stopPropagation(); const touch = e.touches ? e.touches[0] : e; startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'top', scale); if (e.preventDefault) e.preventDefault(); };
+    topDrag.addEventListener('mousedown', startTop);
+    topDrag.addEventListener('touchstart', startTop, { passive: false });
+    container.appendChild(topDrag);
+
+    const bottomDrag = document.createElement('div');
+    bottomDrag.className = 'crop-drag-bottom';
+    const startBottom = e => { e.stopPropagation(); const touch = e.touches ? e.touches[0] : e; startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'bottom', scale); if (e.preventDefault) e.preventDefault(); };
+    bottomDrag.addEventListener('mousedown', startBottom);
+    bottomDrag.addEventListener('touchstart', startBottom, { passive: false });
+    container.appendChild(bottomDrag);
+
+    return container;
+}
+
+function handleImageClick(e, block, blockIndex) {
+    const imgDiv = e.target;
+    const rect = imgDiv.getBoundingClientRect();
+    const clickY = (e.clientY - rect.top) / currentZoom;
+    const displayHeight = rect.height / currentZoom;
+    const scale = displayHeight / block.height;
+    const actualY = Math.round(clickY / scale);
+    if (actualY <= 0 || actualY >= block.height) return;
+
+    if (currentMode === 'cut') {
+        if (!block.cutPoints.includes(actualY)) {
+            block.cutPoints.push(actualY);
+            block.cutPoints.sort((a, b) => a - b);
+            const content = imgDiv.closest('.image-content');
+            renderAllOverlays(block, blockIndex, content);
+            updateStats();
         }
-
-        function removeCropRegion(blockIndex, regionIdx) {
-            const block = imageBlocks[blockIndex];
-            block.cropRegions.splice(regionIdx, 1);
-            const blockEl = document.getElementById(`block-${blockIndex}`);
-            if (blockEl) {
-                const content = blockEl.querySelector('.image-content');
-                renderAllOverlays(block, blockIndex, content);
-            }
-        }
-
-        // ==================== TOUCH SUPPORT ====================
-        function setupTouchSupport() {
-            document.addEventListener('touchmove', (e) => {
-                if (draggedCutLine || draggedCropRegion) {
-                    handleTouchMove(e);
-                }
-            }, { passive: false });
-
-            document.addEventListener('touchend', (e) => {
-                if (draggedCutLine || draggedCropRegion) {
-                    handleTouchEnd(e);
-                }
-            });
-        }
-
-        function handleTouchMove(e) {
-            if (draggedCutLine) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseY = (touch.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
-                let actualY = Math.round(mouseY / draggedCutLine.scale);
-                
-                if (actualY < 1) actualY = 1;
-                if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
-                
-                const lineContainer = document.querySelector(`[data-block-index="${draggedCutLine.blockIndex}"][data-cut-y="${draggedCutLine.oldY}"]`);
-                if (lineContainer) {
-                    lineContainer.style.top = (actualY * draggedCutLine.scale) + 'px';
-                    const label = lineContainer.querySelector('.cut-line-label');
-                    if (label) label.textContent = `${actualY}px`;
-                }
-            } else if (draggedCropRegion) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseY = (touch.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
-                let actualY = Math.round(mouseY / draggedCropRegion.scale);
-                
-                if (actualY < 0) actualY = 0;
-                if (actualY >= draggedCropRegion.block.height) actualY = draggedCropRegion.block.height;
-                
-                if (draggedCropRegion.edge === 'top') {
-                    if (actualY < draggedCropRegion.region.endY - 10) {
-                        draggedCropRegion.region.startY = actualY;
-                    }
-                } else {
-                    if (actualY > draggedCropRegion.region.startY + 10) {
-                        draggedCropRegion.region.endY = actualY;
-                    }
-                }
-                
-                const content = draggedCropRegion.imgDiv.closest('.image-content');
-                renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
-            }
-        }
-
-        function handleTouchEnd(e) {
-            if (draggedCutLine) {
-                const touch = e.changedTouches[0];
-                const mouseY = (touch.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
-                let actualY = Math.round(mouseY / draggedCutLine.scale);
-                
-                if (actualY < 1) actualY = 1;
-                if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
-                
-                if (actualY !== draggedCutLine.oldY) {
-                    const oldIndex = draggedCutLine.block.cutPoints.indexOf(draggedCutLine.oldY);
-                    if (oldIndex > -1) {
-                        draggedCutLine.block.cutPoints.splice(oldIndex, 1);
-                    }
-                    
-                    if (!draggedCutLine.block.cutPoints.includes(actualY)) {
-                        draggedCutLine.block.cutPoints.push(actualY);
-                        draggedCutLine.block.cutPoints.sort((a, b) => a - b);
-                    }
-                    
-                    const content = draggedCutLine.imgDiv.closest('.image-content');
-                    renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
-                }
-                
-                draggedCutLine = null;
-            } else if (draggedCropRegion) {
-                draggedCropRegion = null;
-            }
-        }
-
-        function startDragCutLine(e, block, oldY, blockIndex) {
-            const blockEl = document.getElementById(`block-${blockIndex}`);
-            const imgDiv = blockEl.querySelector('.image-chunk');
-            const rect = imgDiv.getBoundingClientRect();
-            const scale = (rect.height / currentZoom) / block.height;
-            
-            draggedCutLine = { 
-                block, 
-                oldY, 
-                blockIndex, 
-                rect, 
-                scale, 
-                imgDiv,
-                zoom: currentZoom
-            };
-            
-            if (!isMobile) {
-                document.onmousemove = (e) => {
-                    if (!draggedCutLine) return;
-                    const mouseY = (e.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
-                    let actualY = Math.round(mouseY / draggedCutLine.scale);
-                    if (actualY < 1) actualY = 1;
-                    if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
-                    const lineContainer = document.querySelector(`[data-block-index="${draggedCutLine.blockIndex}"][data-cut-y="${draggedCutLine.oldY}"]`);
-                    if (lineContainer) {
-                        lineContainer.style.top = (actualY * draggedCutLine.scale) + 'px';
-                        const label = lineContainer.querySelector('.cut-line-label');
-                        if (label) label.textContent = `${actualY}px`;
-                    }
-                };
-                
-                document.onmouseup = (e) => {
-                    if (!draggedCutLine) return;
-                    const mouseY = (e.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
-                    let actualY = Math.round(mouseY / draggedCutLine.scale);
-                    if (actualY < 1) actualY = 1;
-                    if (actualY >= draggedCutLine.block.height) actualY = draggedCutLine.block.height - 1;
-                    if (actualY !== draggedCutLine.oldY) {
-                        const oldIndex = draggedCutLine.block.cutPoints.indexOf(draggedCutLine.oldY);
-                        if (oldIndex > -1) draggedCutLine.block.cutPoints.splice(oldIndex, 1);
-                        if (!draggedCutLine.block.cutPoints.includes(actualY)) {
-                            draggedCutLine.block.cutPoints.push(actualY);
-                            draggedCutLine.block.cutPoints.sort((a, b) => a - b);
-                        }
-                        const content = draggedCutLine.imgDiv.closest('.image-content');
-                        renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
-                    }
-                    draggedCutLine = null;
-                    document.onmousemove = null;
-                    document.onmouseup = null;
-                };
-            }
-        }
-
-        function startDragCropEdge(e, block, region, blockIndex, regionIdx, edge, scale) {
-            const blockEl = document.getElementById(`block-${blockIndex}`);
-            const imgDiv = blockEl.querySelector('.image-chunk');
-            const rect = imgDiv.getBoundingClientRect();
-            const currentScale = (rect.height / currentZoom) / block.height;
-            
-            draggedCropRegion = { 
-                block, 
-                region, 
-                blockIndex, 
-                regionIdx, 
-                edge, 
-                rect, 
-                scale: currentScale, 
-                imgDiv,
-                zoom: currentZoom
-            };
-            
-            if (!isMobile) {
-                document.onmousemove = (e) => {
-                    if (!draggedCropRegion) return;
-                    const mouseY = (e.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
-                    let actualY = Math.round(mouseY / draggedCropRegion.scale);
-                    if (actualY < 0) actualY = 0;
-                    if (actualY >= draggedCropRegion.block.height) actualY = draggedCropRegion.block.height;
-                    if (draggedCropRegion.edge === 'top') {
-                        if (actualY < draggedCropRegion.region.endY - 10) draggedCropRegion.region.startY = actualY;
-                    } else {
-                        if (actualY > draggedCropRegion.region.startY + 10) draggedCropRegion.region.endY = actualY;
-                    }
-                    const content = draggedCropRegion.imgDiv.closest('.image-content');
-                    renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
-                };
-                
-                document.onmouseup = () => {
-                    draggedCropRegion = null;
-                    document.onmousemove = null;
-                    document.onmouseup = null;
-                };
-            }
-        }
-
-        // ==================== MODE ====================
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('viewMode').classList.toggle('active', mode === 'view');
-            document.getElementById('cutMode').classList.toggle('active', mode === 'cut');
-            document.getElementById('cropMode').classList.toggle('active', mode === 'crop');
-            document.getElementById('cutSettings').style.display = mode === 'cut' ? 'block' : 'none';
-            document.getElementById('cropSettings').style.display = mode === 'crop' ? 'block' : 'none';
+    } else if (currentMode === 'crop') {
+        if (!cropTempPoint) {
+            cropTempPoint = { blockIndex, y: actualY };
+            showModeIndicator(`🗑️ Crop: Y1 = ${actualY}px<br>Tap Y2 →`);
+        } else if (cropTempPoint.blockIndex === blockIndex) {
+            const startY = Math.min(cropTempPoint.y, actualY);
+            const endY   = Math.max(cropTempPoint.y, actualY);
+            block.cropRegions.push({ startY, endY });
             cropTempPoint = null;
             hideModeIndicator();
+            const content = imgDiv.closest('.image-content');
+            renderAllOverlays(block, blockIndex, content);
+            updateStats();
         }
+    }
+}
 
-        function showModeIndicator(text) {
-            const indicator = document.getElementById('modeIndicator');
-            indicator.innerHTML = text;
-            indicator.classList.add('visible');
+function removeCutPoint(block, y, blockIndex) {
+    const idx = block.cutPoints.indexOf(y);
+    if (idx > -1) {
+        block.cutPoints.splice(idx, 1);
+        const blockEl = document.getElementById(`block-${blockIndex}`);
+        if (blockEl) renderAllOverlays(block, blockIndex, blockEl.querySelector('.image-content'));
+        updateStats();
+    }
+}
+
+function removeCropRegion(blockIndex, regionIdx) {
+    imageBlocks[blockIndex].cropRegions.splice(regionIdx, 1);
+    const blockEl = document.getElementById(`block-${blockIndex}`);
+    if (blockEl) renderAllOverlays(imageBlocks[blockIndex], blockIndex, blockEl.querySelector('.image-content'));
+    updateStats();
+}
+
+// ==================== TOUCH ====================
+function setupTouchSupport() {
+    document.addEventListener('touchmove', e => {
+        if (draggedCutLine || draggedCropRegion) handleTouchMove(e);
+    }, { passive: false });
+    document.addEventListener('touchend', e => {
+        if (draggedCutLine || draggedCropRegion) handleTouchEnd(e);
+    });
+}
+
+function handleTouchMove(e) {
+    if (draggedCutLine) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseY = (touch.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
+        let actualY = Math.round(mouseY / draggedCutLine.scale);
+        actualY = Math.max(1, Math.min(draggedCutLine.block.height - 1, actualY));
+        const lc = document.querySelector(`[data-block-index="${draggedCutLine.blockIndex}"][data-cut-y="${draggedCutLine.oldY}"]`);
+        if (lc) {
+            lc.style.top = (actualY * draggedCutLine.scale) + 'px';
+            const label = lc.querySelector('.cut-line-label');
+            if (label) label.textContent = `${actualY}px`;
         }
-
-        function hideModeIndicator() {
-            document.getElementById('modeIndicator').classList.remove('visible');
+    } else if (draggedCropRegion) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseY = (touch.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
+        let actualY = Math.max(0, Math.min(draggedCropRegion.block.height, Math.round(mouseY / draggedCropRegion.scale)));
+        if (draggedCropRegion.edge === 'top') {
+            if (actualY < draggedCropRegion.region.endY - 10) draggedCropRegion.region.startY = actualY;
+        } else {
+            if (actualY > draggedCropRegion.region.startY + 10) draggedCropRegion.region.endY = actualY;
         }
+        const content = draggedCropRegion.imgDiv.closest('.image-content');
+        renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
+    }
+}
 
-        // ==================== MERGE ====================
-        function toggleMerge(index) {
-            mergeStates[index].merged = !mergeStates[index].merged;
-            renderAll();
-        }
-
-        function mergeAll() {
-            mergeStates.forEach(state => { state.merged = true; });
-            renderAll();
-            closeSidebar();
-        }
-
-        function unmergeAll() {
-            mergeStates.forEach(state => { state.merged = false; });
-            renderAll();
-            closeSidebar();
-        }
-
-        function clearAllCuts() {
-            imageBlocks.forEach(b => {
-                b.cutPoints = [];
-                b.cropRegions = [];
-            });
-            renderAll();
-            closeSidebar();
-        }
-
-        function resetToOriginalWidth() {
-            if (originalImageWidth !== null) {
-                let width = originalImageWidth;
-                if (width < 720) width = 720;
-                if (width > 10000) width = 10000;
-                
-                targetWidthValue = width;
-                document.getElementById('targetWidth').value = width;
-                document.getElementById('targetWidthInput').value = width;
-                
-                showToast(`✅ Đã reset về ${width}px`);
-            } else {
-                showToast('⚠️ Chưa có ảnh nào', true);
+function handleTouchEnd(e) {
+    if (draggedCutLine) {
+        const touch = e.changedTouches[0];
+        const mouseY = (touch.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
+        let actualY = Math.max(1, Math.min(draggedCutLine.block.height - 1, Math.round(mouseY / draggedCutLine.scale)));
+        if (actualY !== draggedCutLine.oldY) {
+            const oldIdx = draggedCutLine.block.cutPoints.indexOf(draggedCutLine.oldY);
+            if (oldIdx > -1) draggedCutLine.block.cutPoints.splice(oldIdx, 1);
+            if (!draggedCutLine.block.cutPoints.includes(actualY)) {
+                draggedCutLine.block.cutPoints.push(actualY);
+                draggedCutLine.block.cutPoints.sort((a, b) => a - b);
             }
+            const content = draggedCutLine.imgDiv.closest('.image-content');
+            renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
+            updateStats();
         }
+        draggedCutLine = null;
+    } else if (draggedCropRegion) {
+        draggedCropRegion = null;
+        updateStats();
+    }
+}
 
-        // ==================== BUILD SEGMENTS ====================
-        function buildOutputSegments() {
-            const segments = [];
-            
-            let i = 0;
-            while (i < imageBlocks.length) {
-                let groupEnd = i;
-                while (groupEnd < imageBlocks.length - 1 && mergeStates[groupEnd].merged) {
-                    groupEnd++;
+function startDragCutLine(e, block, oldY, blockIndex) {
+    const blockEl = document.getElementById(`block-${blockIndex}`);
+    const imgDiv = blockEl.querySelector('.image-chunk');
+    const rect = imgDiv.getBoundingClientRect();
+    const scale = (rect.height / currentZoom) / block.height;
+    draggedCutLine = { block, oldY, blockIndex, rect, scale, imgDiv, zoom: currentZoom };
+
+    if (!isMobile) {
+        document.onmousemove = e => {
+            if (!draggedCutLine) return;
+            const mouseY = (e.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
+            let actualY = Math.max(1, Math.min(draggedCutLine.block.height - 1, Math.round(mouseY / draggedCutLine.scale)));
+            const lc = document.querySelector(`[data-block-index="${draggedCutLine.blockIndex}"][data-cut-y="${draggedCutLine.oldY}"]`);
+            if (lc) {
+                lc.style.top = (actualY * draggedCutLine.scale) + 'px';
+                const label = lc.querySelector('.cut-line-label');
+                if (label) label.textContent = `${actualY}px`;
+            }
+        };
+        document.onmouseup = e => {
+            if (!draggedCutLine) return;
+            const mouseY = (e.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
+            let actualY = Math.max(1, Math.min(draggedCutLine.block.height - 1, Math.round(mouseY / draggedCutLine.scale)));
+            if (actualY !== draggedCutLine.oldY) {
+                const oldIdx = draggedCutLine.block.cutPoints.indexOf(draggedCutLine.oldY);
+                if (oldIdx > -1) draggedCutLine.block.cutPoints.splice(oldIdx, 1);
+                if (!draggedCutLine.block.cutPoints.includes(actualY)) {
+                    draggedCutLine.block.cutPoints.push(actualY);
+                    draggedCutLine.block.cutPoints.sort((a, b) => a - b);
                 }
-                
-                const blocksInGroup = imageBlocks.slice(i, groupEnd + 1);
-                
-                let totalGroupHeight = 0;
-                blocksInGroup.forEach(block => {
-                    totalGroupHeight += block.height;
+                const content = draggedCutLine.imgDiv.closest('.image-content');
+                renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
+                updateStats();
+            }
+            draggedCutLine = null;
+            document.onmousemove = null;
+            document.onmouseup = null;
+        };
+    }
+}
+
+function startDragCropEdge(e, block, region, blockIndex, regionIdx, edge, scale) {
+    const blockEl = document.getElementById(`block-${blockIndex}`);
+    const imgDiv = blockEl.querySelector('.image-chunk');
+    const rect = imgDiv.getBoundingClientRect();
+    const currentScale = (rect.height / currentZoom) / block.height;
+    draggedCropRegion = { block, region, blockIndex, regionIdx, edge, rect, scale: currentScale, imgDiv, zoom: currentZoom };
+
+    if (!isMobile) {
+        document.onmousemove = e => {
+            if (!draggedCropRegion) return;
+            const mouseY = (e.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
+            let actualY = Math.max(0, Math.min(draggedCropRegion.block.height, Math.round(mouseY / draggedCropRegion.scale)));
+            if (draggedCropRegion.edge === 'top') {
+                if (actualY < draggedCropRegion.region.endY - 10) draggedCropRegion.region.startY = actualY;
+            } else {
+                if (actualY > draggedCropRegion.region.startY + 10) draggedCropRegion.region.endY = actualY;
+            }
+            const content = draggedCropRegion.imgDiv.closest('.image-content');
+            renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
+        };
+        document.onmouseup = () => {
+            draggedCropRegion = null;
+            document.onmousemove = null;
+            document.onmouseup = null;
+            updateStats();
+        };
+    }
+}
+
+// ==================== MODE ====================
+function setMode(mode) {
+    currentMode = mode;
+    ['view','cut','crop'].forEach(m => document.getElementById(m+'Mode').classList.toggle('active', m === mode));
+    document.getElementById('cutSettings').style.display  = mode === 'cut'  ? 'block' : 'none';
+    document.getElementById('cropSettings').style.display = mode === 'crop' ? 'block' : 'none';
+    cropTempPoint = null;
+    hideModeIndicator();
+}
+
+function showModeIndicator(text) {
+    const el = document.getElementById('modeIndicator');
+    el.innerHTML = text;
+    el.classList.add('visible');
+}
+function hideModeIndicator() {
+    document.getElementById('modeIndicator').classList.remove('visible');
+}
+
+// ==================== MERGE ====================
+function toggleMerge(index) {
+    mergeStates[index].merged = !mergeStates[index].merged;
+    renderAll();
+}
+function mergeAll()    { mergeStates.forEach(s => s.merged = true);  renderAll(); closeSidebar(); }
+function unmergeAll()  { mergeStates.forEach(s => s.merged = false); renderAll(); closeSidebar(); }
+function clearAllCuts(){ imageBlocks.forEach(b => { b.cutPoints = []; b.cropRegions = []; }); renderAll(); closeSidebar(); }
+
+function resetToOriginalWidth() {
+    if (originalImageWidth !== null) {
+        const w = Math.max(720, Math.min(10000, originalImageWidth));
+        targetWidthValue = w;
+        document.getElementById('targetWidth').value = w;
+        document.getElementById('targetWidthInput').value = w;
+        showToast(`✅ Đã reset về ${w}px`);
+    } else {
+        showToast('⚠️ Chưa có ảnh nào', true);
+    }
+}
+
+// ==================== BUILD SEGMENTS ====================
+function buildOutputSegments() {
+    if (!imageBlocks.length) return [];
+    const segments = [];
+    let i = 0;
+    
+    while (i < imageBlocks.length) {
+        let groupEnd = i;
+        while (groupEnd < imageBlocks.length - 1 && mergeStates[groupEnd] && mergeStates[groupEnd].merged) {
+            groupEnd++;
+        }
+        
+        const blocksInGroup = imageBlocks.slice(i, groupEnd + 1);
+        
+        // Tính tổng chiều cao sau resize (theo tỉ lệ riêng của từng ảnh)
+        let totalHeightAfterResize = 0;
+        const blockMetadata = [];
+        
+        blocksInGroup.forEach(block => {
+            const scale = targetWidthValue / block.width;
+            const resizedHeight = Math.round(block.height * scale);
+            const offset = totalHeightAfterResize;
+            
+            blockMetadata.push({
+                block,
+                scale,
+                resizedHeight,
+                offsetInGroup: offset,
+                originalOffset: blocksInGroup.slice(0, blocksInGroup.indexOf(block))
+                    .reduce((sum, b) => sum + b.height, 0)
+            });
+            
+            totalHeightAfterResize += resizedHeight;
+        });
+        
+        // Thu thập cut points và crop regions ở tọa độ sau resize
+        const absCutPoints = [];
+        const absCropRegions = [];
+        
+        blockMetadata.forEach(meta => {
+            // Cut points
+            meta.block.cutPoints.forEach(y => {
+                const scaledY = Math.round(y * meta.scale);
+                const absY = meta.offsetInGroup + scaledY;
+                if (!absCutPoints.includes(absY)) absCutPoints.push(absY);
+            });
+            
+            // Crop regions
+            meta.block.cropRegions.forEach(r => {
+                absCropRegions.push({
+                    startY: meta.offsetInGroup + Math.round(r.startY * meta.scale),
+                    endY: meta.offsetInGroup + Math.round(r.endY * meta.scale)
                 });
-                
-                const safeLimit = MAX_CANVAS_HEIGHT * 0.8;
-                if (totalGroupHeight > safeLimit) {
-                    console.warn(`⚠️ Group quá cao (${totalGroupHeight}px > ${safeLimit}px), tách nhỏ...`);
-                    
-                    blocksInGroup.forEach(block => {
-                        const allCutPoints = block.cutPoints.slice().sort((a, b) => a - b);
-                        const points = [0, ...allCutPoints, block.height];
-                        
-                        for (let j = 0; j < points.length - 1; j++) {
-                            segments.push({
-                                blocks: [block],
-                                startY: points[j],
-                                endY: points[j + 1]
-                            });
-                        }
+            });
+        });
+        
+        absCutPoints.sort((a, b) => a - b);
+        
+        const points = [0, ...absCutPoints, totalHeightAfterResize];
+        const safeLimit = MAX_CANVAS_HEIGHT * 0.85;
+        
+        for (let j = 0; j < points.length - 1; j++) {
+            const rawStart = points[j];
+            const rawEnd = points[j + 1];
+            const netHeight = calcNetHeight(rawStart, rawEnd, absCropRegions);
+            
+            if (netHeight > safeLimit) {
+                const mid = Math.round((rawStart + rawEnd) / 2);
+                [[rawStart, mid], [mid, rawEnd]].forEach(([s, e]) => {
+                    segments.push({
+                        blockMetadata,
+                        totalHeightAfterResize,
+                        startY: s,
+                        endY: e,
+                        absCropRegions
                     });
-                } else {
-                    const allCutPoints = [];
-                    let currentY = 0;
-                    
-                    blocksInGroup.forEach(block => {
-                        block.cutPoints.forEach(y => {
-                            allCutPoints.push(currentY + y);
-                        });
-                        currentY += block.height;
-                    });
-                    
-                    allCutPoints.sort((a, b) => a - b);
-                    const points = [0, ...allCutPoints, currentY];
-                    
-                    for (let j = 0; j < points.length - 1; j++) {
-                        segments.push({
-                            blocks: blocksInGroup,
-                            startY: points[j],
-                            endY: points[j + 1]
-                        });
-                    }
-                }
-                
-                i = groupEnd + 1;
-            }
-            
-            return segments;
-        }
-
-        // ==================== CHECK IF NEED PROCESSING ====================
-        function needsProcessing(segment) {
-            if (segment.blocks.length !== 1) return true;
-            
-            const block = segment.blocks[0];
-            
-            if (block.cutPoints.length > 0) return true;
-            if (block.cropRegions.length > 0) return true;
-            if (segment.startY !== 0 || segment.endY !== block.height) return true;
-            
-            const blockIndex = imageBlocks.indexOf(block);
-            if (blockIndex > 0 && mergeStates[blockIndex - 1].merged) return true;
-            if (blockIndex < imageBlocks.length - 1 && mergeStates[blockIndex].merged) return true;
-            
-            if (targetWidthValue !== block.width) return true;
-            
-            return false;
-        }
-
-        // ==================== PROCESS SEGMENT ====================
-        async function processSegment(segment, forPDF = false) {
-            if (!forPDF && !needsProcessing(segment)) {
-                console.log('📋 Copy file gốc:', segment.blocks[0].name);
-                return segment.blocks[0].file;
-            }
-            
-            console.log('🎨 Xử lý canvas:', segment.blocks.map(b => b.name).join('+'));
-            
-            const { blocks, startY, endY } = segment;
-            
-            const maxOriginalWidth = Math.max(...blocks.map(b => b.width));
-            
-            let width;
-            if (forPDF) {
-                if (maxOriginalWidth < 1000) {
-                    width = 1000;
-                } else {
-                    width = targetWidthValue;
-                }
-            } else {
-                width = targetWidthValue;
-                if (maxOriginalWidth < 720) width = 720;
-            }
-            
-            const scale = width / maxOriginalWidth;
-            
-            let totalHeight = endY - startY;
-            
-            blocks.forEach(block => {
-                block.cropRegions.forEach(region => {
-                    if (region.endY > startY && region.startY < endY) {
-                        const overlapStart = Math.max(region.startY, startY);
-                        const overlapEnd = Math.min(region.endY, endY);
-                        totalHeight -= (overlapEnd - overlapStart);
-                    }
                 });
-            });
-            
-            const height = Math.round(totalHeight * scale);
-
-            if (width > MAX_CANVAS_WIDTH || height > MAX_CANVAS_HEIGHT) {
-                const err = `⚠️ Kích thước ${width}x${height}px vượt quá ${MAX_CANVAS_WIDTH}x${MAX_CANVAS_HEIGHT}px\n→ Vui lòng giảm Width hoặc bỏ ghép`;
-                console.error(err);
-                throw new Error(err);
-            }
-
-            if (totalHeight > 8192 || height > 8192) {
-                console.log('🧩 Dùng TILE rendering');
-                return await processTiledSegment(blocks, startY, endY, width, height, maxOriginalWidth, totalHeight, forPDF);
-            }
-
-            return await processStandardSegment(blocks, startY, endY, width, height, maxOriginalWidth, totalHeight, forPDF);
-        }
-
-        // ==================== STANDARD CANVAS ====================
-        async function processStandardSegment(blocks, startY, endY, finalWidth, finalHeight, originalWidth, totalHeight, forPDF) {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = originalWidth;
-            tempCanvas.height = totalHeight;
-            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: false });
-            
-            if (!tempCtx) {
-                throw new Error('Không thể tạo canvas context');
-            }
-            
-            tempCtx.imageSmoothingEnabled = true;
-            tempCtx.imageSmoothingQuality = 'high';
-
-            let destY = 0;
-            let remainingStartY = startY;
-            let remainingHeight = endY - startY;
-
-            for (let block of blocks) {
-                if (remainingHeight <= 0) break;
-
-                const img = await loadImageFromUrl(block.url);
-
-                if (remainingStartY < block.height) {
-                    const srcY = remainingStartY;
-                    const srcHeight = Math.min(block.height - srcY, remainingHeight);
-                    
-                    let currentSrcY = srcY;
-                    const srcEndY = srcY + srcHeight;
-                    
-                    while (currentSrcY < srcEndY) {
-                        let nextCropStart = srcEndY;
-                        let cropEnd = srcEndY;
-                        
-                        for (let region of block.cropRegions) {
-                            if (region.startY > currentSrcY && region.startY < nextCropStart) {
-                                nextCropStart = region.startY;
-                                cropEnd = region.endY;
-                            }
-                        }
-                        
-                        const drawHeight = Math.min(nextCropStart - currentSrcY, srcEndY - currentSrcY);
-                        
-                        if (drawHeight > 0) {
-                            tempCtx.drawImage(img, 0, currentSrcY, block.width, drawHeight, 0, destY, originalWidth, drawHeight);
-                            destY += drawHeight;
-                        }
-                        
-                        if (nextCropStart < srcEndY && cropEnd > nextCropStart) {
-                            currentSrcY = cropEnd;
-                        } else {
-                            currentSrcY += drawHeight;
-                        }
-                    }
-
-                    remainingHeight -= srcHeight;
-                    remainingStartY = 0;
-                } else {
-                    remainingStartY -= block.height;
-                }
-            }
-
-            if (finalWidth === originalWidth) {
-                return new Promise(resolve => tempCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
-            }
-
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = finalWidth;
-            finalCanvas.height = finalHeight;
-
-            if (picaInstance) {
-                try {
-                    await picaInstance.resize(tempCanvas, finalCanvas, {
-                        quality: 3,
-                        alpha: false,
-                        unsharpAmount: 0,
-                        unsharpRadius: 0,
-                        unsharpThreshold: 0
-                    });
-                    console.log('✅ Pica resize (Lanczos3)');
-                } catch (err) {
-                    console.warn('⚠️ Pica lỗi, fallback canvas:', err);
-                    const ctx = finalCanvas.getContext('2d');
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
-                    ctx.drawImage(tempCanvas, 0, 0, finalWidth, finalHeight);
-                }
             } else {
-                const ctx = finalCanvas.getContext('2d');
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(tempCanvas, 0, 0, finalWidth, finalHeight);
+                segments.push({
+                    blockMetadata,
+                    totalHeightAfterResize,
+                    startY: rawStart,
+                    endY: rawEnd,
+                    absCropRegions
+                });
             }
-
-            if (forPDF && enableSharpen && finalWidth > originalWidth) {
-                console.log('✨ Sharpen');
-                const ctx = finalCanvas.getContext('2d');
-                applySharpenFilter(finalCanvas, ctx, originalWidth, finalWidth);
-            }
-
-            return new Promise(resolve => finalCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
         }
+        
+        i = groupEnd + 1;
+    }
+    
+    return segments;
+}
 
-        // ==================== TILE-BASED RENDERING ====================
-        async function processTiledSegment(blocks, startY, endY, finalWidth, finalHeight, originalWidth, totalHeight, forPDF) {
-            console.log(`🧩 Tile: ${finalWidth}x${finalHeight}px (gốc: ${originalWidth}x${totalHeight}px)`);
+function calcNetHeight(startY, endY, cropRegions) {
+    let h = endY - startY;
+    cropRegions.forEach(r => {
+        const os = Math.max(r.startY, startY);
+        const oe = Math.min(r.endY, endY);
+        if (oe > os) h -= (oe - os);
+    });
+    return Math.max(h, 0);
+}
+
+// ==================== BUILD FILENAME ====================
+function buildFilename(prefix, index, randomID = '', ext = 'jpg') {
+    const cleanPrefix = prefix.replace(/_+$/, '');
+    const num = String(index + 1).padStart(4, '0');
+    const useRandom = document.getElementById('useRandomId').checked;
+    
+    if (useRandom && randomID) {
+        return `${cleanPrefix}_${randomID}_${num}.${ext}`;
+    }
+    return `${cleanPrefix}_${num}.${ext}`;
+}
+
+// ==================== SAFE DOWNLOAD ====================
+async function downloadBlobSafely(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+        console.log(`🗑️ Cleaned: ${filename}`);
+    }, 15000);
+}
+
+// ==================== DOWNLOAD QUEUE ====================
+class DownloadQueue {
+    constructor(batchSize = 2, delayMs = 600) {
+        this.queue = [];
+        this.batchSize = batchSize;
+        this.delayMs = delayMs;
+        this.downloading = false;
+        this.downloadedCount = 0;
+    }
+
+    add(item) {
+        this.queue.push(item);
+        if (!this.downloading) {
+            this.processQueue();
+        }
+    }
+
+    async processQueue() {
+        this.downloading = true;
+
+        while (this.queue.length > 0 && !shouldStop) {
+            const batch = this.queue.splice(0, this.batchSize);
             
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = finalWidth;
-            finalCanvas.height = finalHeight;
-            const finalCtx = finalCanvas.getContext('2d', { willReadFrequently: false });
-            
-            if (!finalCtx) {
-                throw new Error('Không thể tạo final canvas');
-            }
-            
-            finalCtx.imageSmoothingEnabled = true;
-            finalCtx.imageSmoothingQuality = 'high';
-            
-            const scale = finalWidth / originalWidth;
-            const numTiles = Math.ceil(totalHeight / TILE_HEIGHT);
-            
-            for (let tileIndex = 0; tileIndex < numTiles; tileIndex++) {
-                const tileStartY = tileIndex * TILE_HEIGHT;
-                const tileEndY = Math.min((tileIndex + 1) * TILE_HEIGHT, totalHeight);
-                const tileHeight = tileEndY - tileStartY;
-                
-                console.log(`  → Tile ${tileIndex + 1}/${numTiles}: Y=${tileStartY}-${tileEndY} (${tileHeight}px)`);
-                
-                const tileCanvas = document.createElement('canvas');
-                tileCanvas.width = originalWidth;
-                tileCanvas.height = tileHeight;
-                const tileCtx = tileCanvas.getContext('2d', { willReadFrequently: false });
-                
-                if (!tileCtx) continue;
-                
-                tileCtx.imageSmoothingEnabled = true;
-                tileCtx.imageSmoothingQuality = 'high';
-                
-                let destY = 0;
-                let remainingStartY = startY + tileStartY;
-                let remainingHeight = tileHeight;
-                
-                for (let block of blocks) {
-                    if (remainingHeight <= 0) break;
-                    
-                    const img = await loadImageFromUrl(block.url);
-                    
-                    if (remainingStartY < block.height) {
-                        const srcY = remainingStartY;
-                        const srcHeight = Math.min(block.height - srcY, remainingHeight);
-                        
-                        let currentSrcY = srcY;
-                        const srcEndY = srcY + srcHeight;
-                        
-                        while (currentSrcY < srcEndY) {
-                            let nextCropStart = srcEndY;
-                            let cropEnd = srcEndY;
-                            
-                            for (let region of block.cropRegions) {
-                                if (region.startY > currentSrcY && region.startY < nextCropStart) {
-                                    nextCropStart = region.startY;
-                                    cropEnd = region.endY;
-                                }
-                            }
-                            
-                            const drawHeight = Math.min(nextCropStart - currentSrcY, srcEndY - currentSrcY);
-                            
-                            if (drawHeight > 0) {
-                                tileCtx.drawImage(img, 0, currentSrcY, block.width, drawHeight, 0, destY, originalWidth, drawHeight);
-                                destY += drawHeight;
-                            }
-                            
-                            if (nextCropStart < srcEndY && cropEnd > nextCropStart) {
-                                currentSrcY = cropEnd;
-                            } else {
-                                currentSrcY += drawHeight;
-                            }
-                        }
-                        
-                        remainingHeight -= srcHeight;
-                        remainingStartY = 0;
-                    } else {
-                        remainingStartY -= block.height;
-                    }
+            await Promise.all(batch.map(async (item) => {
+                if (item.blob) {
+                    await downloadBlobSafely(item.blob, item.filename);
+                    this.downloadedCount++;
+                    console.log(`✅ Downloaded [${this.downloadedCount}]: ${item.filename}`);
                 }
-                
-                const scaledTileHeight = Math.round(tileHeight * scale);
-                const finalTileY = Math.round(tileStartY * scale);
-                
-                if (finalWidth === originalWidth) {
-                    finalCtx.drawImage(tileCanvas, 0, finalTileY);
-                } else {
-                    const resizedTile = document.createElement('canvas');
-                    resizedTile.width = finalWidth;
-                    resizedTile.height = scaledTileHeight;
-                    
-                    if (picaInstance) {
-                        await picaInstance.resize(tileCanvas, resizedTile, { quality: 3, alpha: false });
-                    } else {
-                        const ctx = resizedTile.getContext('2d');
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
-                        ctx.drawImage(tileCanvas, 0, 0, finalWidth, scaledTileHeight);
-                    }
-                    
-                    finalCtx.drawImage(resizedTile, 0, finalTileY);
-                }
-                
-                console.log(`    ✅ Tile ${tileIndex + 1} OK`);
-            }
-            
-            if (forPDF && enableSharpen && finalWidth > originalWidth) {
-                console.log('✨ Sharpen');
-                applySharpenFilter(finalCanvas, finalCtx, originalWidth, finalWidth);
-            }
-            
-            return new Promise(resolve => finalCanvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
-        }
-
-        function loadImageFromUrl(url) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = url;
-            });
-        }
-
-        // ==================== DOWNLOAD ALL JPG ====================
-        async function downloadAllJPG() {
-            if (imageBlocks.length === 0) return;
-            if (isProcessing) return;
-
-            isProcessing = true;
-            shouldStop = false;
-            
-            document.getElementById('downloadAllBtn').disabled = true;
-            document.getElementById('downloadZipBtn').disabled = true;
-            document.getElementById('downloadPdfBtn').disabled = true;
-            document.getElementById('stopBtn').style.display = 'block';
-
-            showProgress(true, 'Đang phân tích...');
-
-            const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut_';
-            
-            updateProgress(0, `Tìm thấy ${segments.length} file...`);
-
-            let completed = 0;
-            let failed = 0;
-            let originalCount = 0;
-
-            if (isIOS) {
-                for (let i = 0; i < segments.length; i++) {
-                    if (shouldStop) break;
-
-                    const filename = `${prefix}${String(i + 1).padStart(3, '0')}.jpg`;
-                    
-                    try {
-                        const blobOrFile = await processSegment(segments[i], false);
-                        
-                        if (blobOrFile instanceof File) {
-                            originalCount++;
-                        }
-                        
-                        const url = URL.createObjectURL(blobOrFile);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = filename;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                        
-                        completed++;
-                        await sleep(500);
-                    } catch (err) {
-                        console.error('Error:', filename, err);
-                        showToast(err.message, true, 5000);
-                        failed++;
-                    }
-
-                    const percent = (completed + failed) / segments.length * 100;
-                    updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
-                }
-            } else {
-                const queue = segments.map((seg, idx) => ({
-                    segment: seg,
-                    filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
-                    index: idx
-                }));
-
-                const threads = Math.min(5, segments.length);
-
-                const worker = async (q) => {
-                    while (q.length > 0 && !shouldStop) {
-                        const task = q.shift();
-                        if (!task) break;
-
-                        try {
-                            const blobOrFile = await processSegment(task.segment, false);
-                            
-                            if (blobOrFile instanceof File) {
-                                originalCount++;
-                            }
-                            
-                            const url = URL.createObjectURL(blobOrFile);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = task.filename;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                            
-                            completed++;
-                            await sleep(100);
-                        } catch (err) {
-                            console.error('Error:', task.filename, err);
-                            showToast(err.message, true, 5000);
-                            failed++;
-                        }
-
-                        const percent = (completed + failed) / segments.length * 100;
-                        updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
-                    }
-                };
-
-                const workers = Array(threads).fill(null).map(() => worker(queue));
-                await Promise.all(workers);
-            }
-
-            showProgress(false);
-            
-            if (shouldStop) {
-                showToast(`⏹️ Đã dừng! Tải được: ${completed}/${segments.length}`, true);
-            } else {
-                showToast(`✅ Hoàn thành! ${completed} ảnh (${originalCount} gốc, ${failed} lỗi)`);
-            }
-            
-            isProcessing = false;
-            shouldStop = false;
-            document.getElementById('downloadAllBtn').disabled = false;
-            document.getElementById('downloadZipBtn').disabled = false;
-            document.getElementById('downloadPdfBtn').disabled = false;
-            document.getElementById('stopBtn').style.display = 'none';
-        }
-
-        // ==================== DOWNLOAD ZIP ====================
-        async function downloadZIP() {
-            if (imageBlocks.length === 0) return;
-            if (isProcessing) return;
-
-            isProcessing = true;
-            shouldStop = false;
-            
-            document.getElementById('downloadAllBtn').disabled = true;
-            document.getElementById('downloadZipBtn').disabled = true;
-            document.getElementById('downloadPdfBtn').disabled = true;
-            document.getElementById('stopBtn').style.display = 'block';
-
-            showProgress(true, 'Đang tạo ảnh...');
-
-            const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut_';
-            
-            const zip = new JSZip();
-            let completed = 0;
-            let failed = 0;
-            let originalCount = 0;
-
-            const queue = segments.map((seg, idx) => ({
-                segment: seg,
-                filename: `${prefix}${String(idx + 1).padStart(3, '0')}.jpg`,
-                index: idx
             }));
 
-            const threads = Math.min(5, segments.length);
-
-            const worker = async (q) => {
-                while (q.length > 0 && !shouldStop) {
-                    const task = q.shift();
-                    if (!task) break;
-
-                    try {
-                        const blobOrFile = await processSegment(task.segment, false);
-                        
-                        if (blobOrFile instanceof File) {
-                            originalCount++;
-                        }
-                        
-                        zip.file(task.filename, blobOrFile);
-                        completed++;
-                    } catch (err) {
-                        console.error('Error:', task.filename, err);
-                        failed++;
-                    }
-
-                    const percent = (completed + failed) / segments.length * 100;
-                    updateProgress(percent, `${completed}/${segments.length} | Gốc: ${originalCount}`);
-                }
-            };
-
-            const workers = Array(threads).fill(null).map(() => worker(queue));
-            await Promise.all(workers);
-
-            if (shouldStop) {
-                showProgress(false);
-                showToast(`⏹️ Đã dừng! Xử lý được: ${completed}/${segments.length}`, true);
-                
-                isProcessing = false;
-                shouldStop = false;
-                document.getElementById('downloadAllBtn').disabled = false;
-                document.getElementById('downloadZipBtn').disabled = false;
-                document.getElementById('downloadPdfBtn').disabled = false;
-                document.getElementById('stopBtn').style.display = 'none';
-                return;
+            if (this.queue.length > 0) {
+                await sleep(this.delayMs);
             }
-
-            updateProgress(0, 'Đang nén ZIP...');
-            const zipBlob = await zip.generateAsync({
-                type: 'blob',
-                compression: 'DEFLATE',
-                compressionOptions: { level: 6 }
-            }, (metadata) => {
-                updateProgress(metadata.percent, `Nén ZIP: ${Math.round(metadata.percent)}%`);
-            });
-
-            const url = URL.createObjectURL(zipBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${prefix}output.zip`;
-            a.click();
-            URL.revokeObjectURL(url);
-
-            showProgress(false);
-            showToast(`✅ Đã nén ${completed} ảnh (${originalCount} gốc) vào ZIP`);
-            
-            isProcessing = false;
-            shouldStop = false;
-            document.getElementById('downloadAllBtn').disabled = false;
-            document.getElementById('downloadZipBtn').disabled = false;
-            document.getElementById('downloadPdfBtn').disabled = false;
-            document.getElementById('stopBtn').style.display = 'none';
         }
 
-        // ==================== DOWNLOAD PDF ====================
-        async function downloadPDF() {
-            if (imageBlocks.length === 0) return;
-            if (isProcessing) return;
+        this.downloading = false;
+    }
 
-            isProcessing = true;
-            shouldStop = false;
+    getDownloadedCount() {
+        return this.downloadedCount;
+    }
+
+    reset() {
+        this.queue = [];
+        this.downloading = false;
+        this.downloadedCount = 0;
+    }
+}
+
+// ==================== PROCESS SEGMENT (NEW LOGIC) ====================
+async function processSegment(segment) {
+    const { blockMetadata, totalHeightAfterResize, startY, endY, absCropRegions } = segment;
+    
+    const netH = calcNetHeight(startY, endY, absCropRegions);
+    const width = targetWidthValue;
+    const height = netH;
+
+    if (!netH || !height) {
+        console.warn('Segment empty after crop');
+        return null;
+    }
+
+    if (width > MAX_CANVAS_WIDTH || height > MAX_CANVAS_HEIGHT) {
+        throw new Error(`Kích thước ${width}x${height}px vượt giới hạn canvas.`);
+    }
+
+    console.log(`🎨 Segment [${startY}-${endY}] netH=${netH} → ${width}x${height}px`);
+
+    if (netH > 8192 || height > 8192) {
+        return processTiledSegment(segment, width, height);
+    }
+    return processStandardSegment(segment, width, height);
+}
+
+// ==================== STANDARD PROCESS (RESIZE THEO TỈ LỆ) ====================
+async function processStandardSegment(segment, finalW, finalH) {
+    const { blockMetadata, startY, endY, absCropRegions } = segment;
+    
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = finalW;
+    finalCanvas.height = finalH;
+    const ctx = finalCanvas.getContext('2d', { willReadFrequently: false });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    const drawRanges = subtractCropRegions(startY, endY, absCropRegions);
+    let destY = 0;
+
+    for (const [rangeStart, rangeEnd] of drawRanges) {
+        for (const meta of blockMetadata) {
+            const blockStart = meta.offsetInGroup;
+            const blockEnd = meta.offsetInGroup + meta.resizedHeight;
             
-            document.getElementById('downloadAllBtn').disabled = true;
-            document.getElementById('downloadZipBtn').disabled = true;
-            document.getElementById('downloadPdfBtn').disabled = true;
-            document.getElementById('stopBtn').style.display = 'block';
-
-            showProgress(true, 'Đang tạo ảnh cho PDF...');
-
-            const segments = buildOutputSegments();
-            const prefix = document.getElementById('outputPrefix').value || 'cut_';
+            const overlapStart = Math.max(rangeStart, blockStart);
+            const overlapEnd = Math.min(rangeEnd, blockEnd);
             
-            let completed = 0;
-            let failed = 0;
-
-            const imageBlobs = [];
-
-            const queue = segments.map((seg, idx) => ({ segment: seg, index: idx }));
-            const threads = Math.min(5, segments.length);
-
-            const worker = async (q) => {
-                while (q.length > 0 && !shouldStop) {
-                    const task = q.shift();
-                    if (!task) break;
-
-                    try {
-                        const blob = await processSegment(task.segment, true);
-                        imageBlobs[task.index] = blob;
-                        completed++;
-                    } catch (err) {
-                        console.error('Error processing segment', task.index, err);
-                        failed++;
-                    }
-
-                    const percent = (completed + failed) / segments.length * 100;
-                    updateProgress(percent, `${completed}/${segments.length} | Lỗi: ${failed}`);
-                }
-            };
-
-            const workers = Array(threads).fill(null).map(() => worker(queue));
-            await Promise.all(workers);
-
-            if (shouldStop) {
-                showProgress(false);
-                showToast(`⏹️ Đã dừng! Xử lý được: ${completed}/${segments.length}`, true);
+            if (overlapEnd > overlapStart) {
+                const img = await loadImageFromUrl(meta.block.url);
                 
-                isProcessing = false;
-                shouldStop = false;
-                document.getElementById('downloadAllBtn').disabled = false;
-                document.getElementById('downloadZipBtn').disabled = false;
-                document.getElementById('downloadPdfBtn').disabled = false;
-                document.getElementById('stopBtn').style.display = 'none';
-                return;
+                // Tính toán vùng source từ ảnh gốc
+                const srcStartInResized = overlapStart - blockStart;
+                const srcEndInResized = overlapEnd - blockStart;
+                
+                // Chuyển về tọa độ ảnh gốc
+                const srcY = Math.round(srcStartInResized / meta.scale);
+                const srcH = Math.round((srcEndInResized - srcStartInResized) / meta.scale);
+                
+                const destH = overlapEnd - overlapStart;
+                
+                // Vẽ trực tiếp lên canvas final với resize
+                ctx.drawImage(
+                    img,
+                    0, srcY, meta.block.width, srcH,
+                    0, destY, finalW, destH
+                );
+                
+                destY += destH;
             }
+        }
+    }
 
-            updateProgress(0, 'Đang tạo PDF...');
+    return new Promise(r => finalCanvas.toBlob(r, 'image/jpeg', jpegQualityValue));
+}
 
-            const { PDFDocument } = PDFLib;
-            const pdfDoc = await PDFDocument.create();
+// ==================== TILED PROCESS (RESIZE THEO TỈ LỆ) ====================
+async function processTiledSegment(segment, finalW, finalH) {
+    const { blockMetadata, startY, endY, absCropRegions } = segment;
+    const netH = calcNetHeight(startY, endY, absCropRegions);
+    
+    console.log(`🧩 Tile: ${finalW}x${finalH} (net=${netH})`);
 
-            for (let i = 0; i < imageBlobs.length; i++) {
-                if (!imageBlobs[i]) continue;
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = finalW;
+    finalCanvas.height = finalH;
+    const finalCtx = finalCanvas.getContext('2d', { willReadFrequently: false });
+    finalCtx.imageSmoothingEnabled = true;
+    finalCtx.imageSmoothingQuality = 'high';
 
-                try {
-                    const arrayBuffer = await imageBlobs[i].arrayBuffer();
-                    const image = await pdfDoc.embedJpg(arrayBuffer);
+    const numTiles = Math.ceil(netH / TILE_HEIGHT);
+
+    for (let t = 0; t < numTiles; t++) {
+        const tNetStart = t * TILE_HEIGHT;
+        const tNetEnd = Math.min((t + 1) * TILE_HEIGHT, netH);
+        const tNetH = tNetEnd - tNetStart;
+
+        const { absStart, absEnd } = netToAbsRange(startY, tNetStart, tNetEnd, absCropRegions);
+        const drawRanges = subtractCropRegions(absStart, absEnd, absCropRegions);
+
+        const tileCanvas = document.createElement('canvas');
+        tileCanvas.width = finalW;
+        tileCanvas.height = tNetH;
+        const tileCtx = tileCanvas.getContext('2d', { willReadFrequently: false });
+        tileCtx.imageSmoothingEnabled = true;
+        tileCtx.imageSmoothingQuality = 'high';
+
+        let tileDestY = 0;
+        
+        for (const [rangeStart, rangeEnd] of drawRanges) {
+            for (const meta of blockMetadata) {
+                const blockStart = meta.offsetInGroup;
+                const blockEnd = meta.offsetInGroup + meta.resizedHeight;
+                
+                const os = Math.max(rangeStart, blockStart);
+                const oe = Math.min(rangeEnd, blockEnd);
+                
+                if (oe > os) {
+                    const img = await loadImageFromUrl(meta.block.url);
                     
-                    const imgWidth = image.width;
-                    const imgHeight = image.height;
+                    const srcStartInResized = os - blockStart;
+                    const srcEndInResized = oe - blockStart;
+                    const srcY = Math.round(srcStartInResized / meta.scale);
+                    const srcH = Math.round((srcEndInResized - srcStartInResized) / meta.scale);
+                    const destH = oe - os;
                     
-                    const page = pdfDoc.addPage([imgWidth, imgHeight]);
+                    tileCtx.drawImage(
+                        img,
+                        0, srcY, meta.block.width, srcH,
+                        0, tileDestY, finalW, destH
+                    );
                     
-                    page.drawImage(image, {
-                        x: 0,
-                        y: 0,
-                        width: imgWidth,
-                        height: imgHeight
-                    });
-
-                    const percent = ((i + 1) / imageBlobs.length) * 100;
-                    updateProgress(percent, `Tạo PDF: ${i + 1}/${imageBlobs.length}`);
-                } catch (err) {
-                    console.error('Error embedding image', i, err);
+                    tileDestY += destH;
                 }
             }
-
-            updateProgress(99, 'Đang nén PDF...');
-
-            const pdfBytes = await pdfDoc.save();
-            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
-
-            const url = URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${prefix}output.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-
-            showProgress(false);
-            showToast(`✅ Tạo PDF thành công! ${completed} ảnh`);
-            
-            isProcessing = false;
-            shouldStop = false;
-            document.getElementById('downloadAllBtn').disabled = false;
-            document.getElementById('downloadZipBtn').disabled = false;
-            document.getElementById('downloadPdfBtn').disabled = false;
-            document.getElementById('stopBtn').style.display = 'none';
         }
 
-        function stopProcess() {
-            shouldStop = true;
-            document.getElementById('stopBtn').disabled = true;
-        }
+        const destTileY = tNetStart;
+        finalCtx.drawImage(tileCanvas, 0, destTileY);
+    }
 
-        // ==================== ZOOM ====================
-        function setupZoomControls() {
-            const canvasArea = document.getElementById('canvasArea');
-            
-            if (!isMobile) {
-                canvasArea.addEventListener('wheel', (e) => {
-                    if (e.ctrlKey) {
-                        e.preventDefault();
-                        e.deltaY < 0 ? zoomIn() : zoomOut();
-                    }
-                }, { passive: false });
+    return new Promise(r => finalCanvas.toBlob(r, 'image/jpeg', jpegQualityValue));
+}
+
+function netToAbsRange(segStartY, netStart, netEnd, cropRegions) {
+    const BIG = segStartY + 100000;
+    const freeRanges = subtractCropRegions(segStartY, BIG, cropRegions);
+
+    let cumNet = 0;
+    let absStart = segStartY + netStart;
+    let absEnd = segStartY + netEnd;
+    let foundStart = false;
+    let foundEnd = false;
+
+    for (const [fs, fe] of freeRanges) {
+        const rangeLen = fe - fs;
+        if (!foundStart) {
+            if (cumNet + rangeLen > netStart) {
+                absStart = fs + (netStart - cumNet);
+                foundStart = true;
             }
-
-            let initialDistance = 0;
-            let initialZoom = 1;
-            
-            canvasArea.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    initialDistance = getDistance(e.touches[0], e.touches[1]);
-                    initialZoom = currentZoom;
-                }
-            });
-
-            canvasArea.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                    const scale = currentDistance / initialDistance;
-                    currentZoom = Math.min(Math.max(initialZoom * scale, 0.3), 5);
-                    applyZoom();
-                }
-            }, { passive: false });
         }
-
-        function getDistance(touch1, touch2) {
-            const dx = touch1.clientX - touch2.clientX;
-            const dy = touch1.clientY - touch2.clientY;
-            return Math.sqrt(dx * dx + dy * dy);
-        }
-
-        function zoomIn() {
-            currentZoom = Math.min(currentZoom * 1.2, 5);
-            applyZoom();
-        }
-
-        function zoomOut() {
-            currentZoom = Math.max(currentZoom / 1.2, 0.3);
-            applyZoom();
-        }
-
-        function resetZoom() {
-            currentZoom = 1.0;
-            applyZoom();
-        }
-
-        function applyZoom() {
-            document.getElementById('canvasViewport').style.transform = `scale(${currentZoom})`;
-            const displayPercent = Math.round(currentZoom * 100);
-            document.getElementById('zoomLevel').textContent = displayPercent + '%';
-        }
-
-        // ==================== CONFIG ====================
-        function exportConfig() {
-            const config = {
-                version: 22,
-                platform: { isIOS, isAndroid, isMobile },
-                targetWidth: targetWidthValue,
-                originalImageWidth: originalImageWidth,
-                jpegQuality: jpegQualityValue,
-                enableSharpen: enableSharpen,
-                outputPrefix: document.getElementById('outputPrefix').value,
-                blocks: imageBlocks.map(b => ({
-                    name: b.name,
-                    width: b.width,
-                    height: b.height,
-                    cutPoints: b.cutPoints,
-                    cropRegions: b.cropRegions
-                })),
-                mergeStates: mergeStates
-            };
-
-            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'webtoon_config.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function importConfig() {
-            document.getElementById('configInput').click();
-        }
-
-        document.getElementById('configInput').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            try {
-                const config = JSON.parse(await file.text());
-                document.getElementById('targetWidth').value = config.targetWidth;
-                document.getElementById('targetWidthInput').value = config.targetWidth;
-                document.getElementById('outputPrefix').value = config.outputPrefix;
-                targetWidthValue = config.targetWidth;
-                
-                if (config.originalImageWidth !== undefined) {
-                    originalImageWidth = config.originalImageWidth;
-                    document.getElementById('originalWidthLabel').textContent = originalImageWidth;
-                }
-                
-                if (config.enableSharpen !== undefined) {
-                    enableSharpen = config.enableSharpen;
-                    document.getElementById('sharpenCheck').checked = enableSharpen;
-                }
-            } catch (err) {
-                console.error('Config load error:', err);
+        if (!foundEnd) {
+            if (cumNet + rangeLen >= netEnd) {
+                absEnd = fs + (netEnd - cumNet);
+                foundEnd = true;
             }
+        }
+        if (foundStart && foundEnd) break;
+        cumNet += rangeLen;
+    }
 
-            e.target.value = '';
+    return { absStart, absEnd };
+}
+
+function subtractCropRegions(startY, endY, cropRegions) {
+    let ranges = [[startY, endY]];
+    cropRegions.forEach(r => {
+        const newRanges = [];
+        ranges.forEach(([s, e]) => {
+            const cs = Math.max(r.startY, s);
+            const ce = Math.min(r.endY, e);
+            if (ce <= cs) {
+                newRanges.push([s, e]);
+            } else {
+                if (s < cs) newRanges.push([s, cs]);
+                if (ce < e) newRanges.push([ce, e]);
+            }
         });
+        ranges = newRanges;
+    });
+    return ranges;
+}
 
-        // ==================== UTILS ====================
-        function setupRangeInputs() {
-            const widthSlider = document.getElementById('targetWidth');
-            const widthInput = document.getElementById('targetWidthInput');
+function loadImageFromUrl(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+    });
+}
+
+// ==================== DOWNLOAD ALL JPG ====================
+async function downloadAllJPG() {
+    if (!imageBlocks.length || isProcessing) return;
+    isProcessing = true;
+    shouldStop = false;
+    setButtonsDisabled(true);
+    showProgress(true, 'Đang phân tích...');
+
+    const segments = buildOutputSegments();
+    const prefix = document.getElementById('outputPrefix').value || 'cut';
+    const randomID = currentRandomID;
+    
+    console.log(`📦 Session ID: ${randomID}`);
+    updateProgress(0, `Chuẩn bị ${segments.length} ảnh...`);
+
+    let processedCount = 0;
+    const downloadQueue = new DownloadQueue(2, 600);
+
+    const processOne = async (seg, idx) => {
+        try {
+            const blob = await processSegment(seg);
+            if (!blob) {
+                processedCount++;
+                return false;
+            }
+            processedCount++;
             
-            widthSlider.addEventListener('input', (e) => {
-                targetWidthValue = parseInt(e.target.value);
-                widthInput.value = targetWidthValue;
+            const filename = buildFilename(prefix, idx, randomID);
+            downloadQueue.add({ blob, filename, idx });
+            
+            updateProgress(
+                (processedCount / segments.length) * 100,
+                `Xử lý: ${processedCount}/${segments.length} | Tải: ${downloadQueue.getDownloadedCount()}/${segments.length}`
+            );
+            
+            return true;
+        } catch (err) {
+            console.error(`❌ Segment ${idx} failed:`, err);
+            showToast(`Lỗi ảnh ${idx + 1}: ${err.message}`, true, 3000);
+            processedCount++;
+            return false;
+        }
+    };
+
+    if (isIOS) {
+        for (let i = 0; i < segments.length; i++) {
+            if (shouldStop) break;
+            await processOne(segments[i], i);
+            if (i % 3 === 0) await sleep(100);
+        }
+    } else {
+        const THREADS = Math.min(4, Math.max(2, segments.length));
+        const queue = segments.map((seg, idx) => ({ seg, idx }));
+        
+        const worker = async () => {
+            while (queue.length && !shouldStop) {
+                const task = queue.shift();
+                if (!task) break;
+                await processOne(task.seg, task.idx);
+            }
+        };
+        
+        await Promise.all(Array(THREADS).fill(null).map(() => worker()));
+    }
+
+    while (downloadQueue.downloading && !shouldStop) {
+        await sleep(200);
+    }
+
+    showProgress(false);
+
+    const downloaded = downloadQueue.getDownloadedCount();
+    
+    if (shouldStop) {
+        showToast(`⏹️ Đã dừng! Đã tải: ${downloaded}/${segments.length}`, true);
+    } else {
+        const useRandom = document.getElementById('useRandomId').checked;
+        const msg = useRandom 
+            ? `✅ Hoàn thành! ${downloaded} ảnh • ID: ${randomID}`
+            : `✅ Hoàn thành! ${downloaded} ảnh`;
+        showToast(msg, false, 5000);
+    }
+
+    isProcessing = false;
+    shouldStop = false;
+    setButtonsDisabled(false);
+}
+
+// ==================== DOWNLOAD ZIP ====================
+async function downloadZIP() {
+    if (!imageBlocks.length || isProcessing) return;
+    isProcessing = true;
+    shouldStop = false;
+    setButtonsDisabled(true);
+    showProgress(true, 'Đang tạo ảnh...');
+
+    const segments = buildOutputSegments();
+    const prefix = document.getElementById('outputPrefix').value || 'cut';
+    const randomID = currentRandomID;
+    const zip = new JSZip();
+
+    const { results, completed, failed } = await processAllSegments(segments);
+
+    if (shouldStop) {
+        showProgress(false);
+        showToast(`⏹️ Đã dừng! Xử lý: ${completed}/${segments.length}`, true);
+        isProcessing = false;
+        shouldStop = false;
+        setButtonsDisabled(false);
+        return;
+    }
+
+    results.forEach((blob, i) => {
+        if (blob) zip.file(buildFilename(prefix, i, randomID), blob);
+    });
+
+    updateProgress(0, 'Đang nén ZIP...');
+    const zipBlob = await zip.generateAsync(
+        { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+        meta => updateProgress(meta.percent, `Nén ZIP: ${Math.round(meta.percent)}%`)
+    );
+
+    const useRandom = document.getElementById('useRandomId').checked;
+    const zipFilename = useRandom ? `${prefix}_${randomID}.zip` : `${prefix}.zip`;
+    await downloadBlobSafely(zipBlob, zipFilename);
+
+    showProgress(false);
+    const msg = useRandom 
+        ? `✅ ZIP: ${completed} ảnh • ID: ${randomID}`
+        : `✅ ZIP: ${completed} ảnh`;
+    showToast(msg, false, 5000);
+    isProcessing = false;
+    shouldStop = false;
+    setButtonsDisabled(false);
+}
+
+// ==================== DOWNLOAD PDF ====================
+async function downloadPDF() {
+    if (!imageBlocks.length || isProcessing) return;
+    isProcessing = true;
+    shouldStop = false;
+    setButtonsDisabled(true);
+    showProgress(true, 'Đang tạo ảnh...');
+
+    const segments = buildOutputSegments();
+    const prefix = document.getElementById('outputPrefix').value || 'cut';
+    const randomID = currentRandomID;
+
+    const { results, completed, failed } = await processAllSegments(segments);
+
+    if (shouldStop) {
+        showProgress(false);
+        showToast(`⏹️ Đã dừng! Xử lý: ${completed}/${segments.length}`, true);
+        isProcessing = false;
+        shouldStop = false;
+        setButtonsDisabled(false);
+        return;
+    }
+
+    updateProgress(0, 'Đang tạo PDF...');
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.create();
+
+    for (let i = 0; i < results.length; i++) {
+        if (!results[i]) continue;
+        try {
+            const ab = await results[i].arrayBuffer();
+            const img = await pdfDoc.embedJpg(ab);
+            const page = pdfDoc.addPage([img.width, img.height]);
+            page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+            updateProgress((i + 1) / results.length * 100, `PDF: ${i + 1}/${results.length}`);
+        } catch (err) {
+            console.error('PDF embed error', i, err);
+        }
+    }
+
+    updateProgress(99, 'Đang lưu PDF...');
+    const pdfBytes = await pdfDoc.save();
+    const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+    
+    const useRandom = document.getElementById('useRandomId').checked;
+    const pdfFilename = useRandom ? `${prefix}_${randomID}.pdf` : `${prefix}.pdf`;
+    await downloadBlobSafely(pdfBlob, pdfFilename);
+
+    showProgress(false);
+    const msg = useRandom 
+        ? `✅ PDF: ${completed} trang • ID: ${randomID}`
+        : `✅ PDF: ${completed} trang`;
+    showToast(msg, false, 5000);
+    isProcessing = false;
+    shouldStop = false;
+    setButtonsDisabled(false);
+}
+
+async function processAllSegments(segments) {
+    const results = new Array(segments.length).fill(null);
+    let completed = 0, failed = 0;
+
+    if (isIOS) {
+        for (let i = 0; i < segments.length; i++) {
+            if (shouldStop) break;
+            try {
+                results[i] = await processSegment(segments[i]);
+                if (results[i]) completed++;
+                else failed++;
+            } catch (err) {
+                console.error('Segment', i, err);
+                showToast(err.message, true, 5000);
+                failed++;
+            }
+            updateProgress((completed + failed) / segments.length * 100, `${completed}/${segments.length} (lỗi: ${failed})`);
+        }
+    } else {
+        const queue = segments.map((seg, idx) => ({ seg, idx }));
+        const THREADS = Math.min(4, segments.length);
+        const worker = async () => {
+            while (queue.length && !shouldStop) {
+                const task = queue.shift();
+                if (!task) break;
+                try {
+                    results[task.idx] = await processSegment(task.seg);
+                    if (results[task.idx]) completed++;
+                    else failed++;
+                } catch (err) {
+                    console.error('Segment', task.idx, err);
+                    showToast(err.message, true, 5000);
+                    failed++;
+                }
+                updateProgress((completed + failed) / segments.length * 100, `${completed}/${segments.length} (lỗi: ${failed})`);
+            }
+        };
+        await Promise.all(Array(THREADS).fill(null).map(() => worker()));
+    }
+
+    return { results, completed, failed };
+}
+
+function setButtonsDisabled(disabled) {
+    ['downloadAllBtn','downloadZipBtn','downloadPdfBtn'].forEach(id => {
+        document.getElementById(id).disabled = disabled;
+    });
+    document.getElementById('stopBtn').style.display = disabled ? 'block' : 'none';
+}
+
+function stopProcess() {
+    shouldStop = true;
+    document.getElementById('stopBtn').disabled = true;
+}
+
+// ==================== ZOOM ====================
+function setupZoomControls() {
+    const area = document.getElementById('canvasArea');
+    if (!isMobile) {
+        area.addEventListener('wheel', e => {
+            if (e.ctrlKey) { e.preventDefault(); e.deltaY < 0 ? zoomIn() : zoomOut(); }
+        }, { passive: false });
+    }
+
+    let initDist = 0, initZoom = 1;
+    area.addEventListener('touchstart', e => {
+        if (e.touches.length === 2) { initDist = getDist(e.touches[0], e.touches[1]); initZoom = currentZoom; }
+    });
+    area.addEventListener('touchmove', e => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const d = getDist(e.touches[0], e.touches[1]);
+            currentZoom = Math.min(5, Math.max(0.3, initZoom * d / initDist));
+            applyZoom();
+        }
+    }, { passive: false });
+}
+
+function getDist(t1, t2) { return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY); }
+function zoomIn()    { currentZoom = Math.min(5, currentZoom * 1.2); applyZoom(); }
+function zoomOut()   { currentZoom = Math.max(0.3, currentZoom / 1.2); applyZoom(); }
+function resetZoom() { currentZoom = 1.0; applyZoom(); }
+function applyZoom() {
+    document.getElementById('canvasViewport').style.transform = `scale(${currentZoom})`;
+    document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+}
+
+// ==================== CONFIG ====================
+function exportConfig() {
+    const config = {
+        version: 24,
+        targetWidth: targetWidthValue,
+        originalImageWidth,
+        jpegQuality: jpegQualityValue,
+        outputPrefix: document.getElementById('outputPrefix').value,
+        randomID: currentRandomID,
+        useRandomId: document.getElementById('useRandomId').checked,
+        blocks: imageBlocks.map(b => ({
+            name: b.name, 
+            width: b.width, 
+            height: b.height,
+            cutPoints: b.cutPoints, 
+            cropRegions: b.cropRegions
+        })),
+        mergeStates: mergeStates.map(m => ({ index: m.index, merged: m.merged }))
+    };
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; 
+    a.download = 'webtoon_config.json'; 
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ Đã xuất config');
+}
+
+function importConfig() { 
+    document.getElementById('configInput').click(); 
+}
+
+document.getElementById('configInput').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+        const cfg = JSON.parse(await file.text());
+        
+        // Load basic settings
+        targetWidthValue = cfg.targetWidth || 1440;
+        document.getElementById('targetWidth').value = targetWidthValue;
+        document.getElementById('targetWidthInput').value = targetWidthValue;
+        document.getElementById('outputPrefix').value = cfg.outputPrefix || 'cut';
+        
+        if (cfg.randomID) {
+            currentRandomID = cfg.randomID;
+            document.getElementById('randomIdDisplay').textContent = currentRandomID;
+        }
+        
+        if (cfg.useRandomId !== undefined) {
+            document.getElementById('useRandomId').checked = cfg.useRandomId;
+        }
+        
+        if (cfg.originalImageWidth) {
+            originalImageWidth = cfg.originalImageWidth;
+            document.getElementById('originalWidthLabel').textContent = originalImageWidth;
+        }
+        
+        // Load blocks data (cutPoints, cropRegions)
+        if (cfg.blocks && cfg.blocks.length === imageBlocks.length) {
+            cfg.blocks.forEach((cfgBlock, idx) => {
+                if (imageBlocks[idx] && imageBlocks[idx].name === cfgBlock.name) {
+                    imageBlocks[idx].cutPoints = cfgBlock.cutPoints || [];
+                    imageBlocks[idx].cropRegions = cfgBlock.cropRegions || [];
+                }
             });
-            
-            widthInput.addEventListener('change', (e) => {
-                let val = parseInt(e.target.value);
-                if (isNaN(val) || val < 720) val = 720;
-                if (val > 10000) val = 10000;
-                targetWidthValue = val;
-                widthSlider.value = val;
-                widthInput.value = val;
-            });
-            
-            widthInput.addEventListener('blur', (e) => {
-                let val = parseInt(e.target.value);
-                if (isNaN(val) || val < 720) val = 720;
-                if (val > 10000) val = 10000;
-                targetWidthValue = val;
-                widthSlider.value = val;
-                widthInput.value = val;
+        }
+        
+        // Load merge states
+        if (cfg.mergeStates) {
+            cfg.mergeStates.forEach((state, idx) => {
+                if (mergeStates[idx]) {
+                    mergeStates[idx].merged = state.merged;
+                }
             });
         }
+        
+        renderAll();
+        updateStats();
+        showToast('✅ Đã import config');
+        
+    } catch (err) { 
+        console.error('Config load error:', err);
+        showToast('❌ Lỗi đọc config: ' + err.message, true);
+    }
+    
+    e.target.value = '';
+});
 
-        function clearAll() {
-            if (!confirm('Xóa tất cả ảnh?')) return;
-            
-            imageBlocks.forEach(b => {
-                if (b.url) URL.revokeObjectURL(b.url);
-            });
-            
-            imageBlocks = [];
-            mergeStates = [];
-            originalImageWidth = null;
-            document.getElementById('originalWidthLabel').textContent = '--';
-            renderAll();
-            closeSidebar();
-        }
+// ==================== UTILS ====================
+function setupRangeInputs() {
+    const slider = document.getElementById('targetWidth');
+    const input = document.getElementById('targetWidthInput');
+    slider.addEventListener('input', e => {
+        targetWidthValue = parseInt(e.target.value);
+        input.value = targetWidthValue;
+        updateStats();
+    });
+    const sync = e => {
+        let v = parseInt(e.target.value);
+        if (isNaN(v) || v < 720) v = 720;
+        if (v > 10000) v = 10000;
+        targetWidthValue = v;
+        slider.value = v;
+        input.value = v;
+        updateStats();
+    };
+    input.addEventListener('change', sync);
+    input.addEventListener('blur', sync);
+}
 
-        function showProgress(show, text = '') {
-            document.getElementById('progressOverlay').classList.toggle('visible', show);
-            if (text) document.getElementById('progressText').textContent = text;
-        }
+function clearAll() {
+    if (!confirm('Xóa tất cả ảnh?')) return;
+    imageBlocks.forEach(b => { if (b.url) URL.revokeObjectURL(b.url); });
+    imageBlocks = []; 
+    mergeStates = [];
+    originalImageWidth = null;
+    document.getElementById('originalWidthLabel').textContent = '--';
+    renderAll();
+    closeSidebar();
+}
 
-        function updateProgress(percent, text) {
-            const fill = document.getElementById('progressFill');
-            fill.style.width = percent + '%';
-            fill.textContent = Math.round(percent) + '%';
-            document.getElementById('progressText').textContent = text;
-        }
+function showProgress(show, text = '') {
+    document.getElementById('progressOverlay').classList.toggle('visible', show);
+    if (text) document.getElementById('progressText').textContent = text;
+}
 
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-    </script>
+function updateProgress(pct, text) {
+    const fill = document.getElementById('progressFill');
+    fill.style.width = pct + '%';
+    fill.textContent = Math.round(pct) + '%';
+    document.getElementById('progressText').textContent = text;
+}
+
+function sleep(ms) { 
+    return new Promise(r => setTimeout(r, ms)); 
+}
+</script>
 </body>
 </html>
