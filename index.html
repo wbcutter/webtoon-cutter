@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Webtoon Cut Pro</title>
+    <!-- JSZip chỉ dùng để ĐỌC file zip nạp vào -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script src="https://unpkg.com/pica@9.0.1/dist/pica.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -30,21 +28,19 @@
         @media (max-width: 768px) { .menu-toggle { display: block; } }
         .main-container { display: flex; height: calc(100vh - 52px); position: relative; }
         .sidebar {
-            width: 100%; max-width: 320px; background: #111; border-right: 2px solid #222;
+            width: 100%; max-width: 330px; background: #111; border-right: 2px solid #222;
             overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
             padding: 15px; transition: transform 0.3s;
             scrollbar-width: auto; scrollbar-color: #00d4ff #0a0a0a;
         }
-        .sidebar::-webkit-scrollbar { width: 12px; }
-        .sidebar::-webkit-scrollbar-track { background: #0a0a0a; border-radius: 6px; }
-        .sidebar::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 6px; border: 2px solid #0a0a0a; }
+        .sidebar::-webkit-scrollbar { width: 10px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 5px; }
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed; top: 52px; left: 0; bottom: 0; z-index: 90;
                 transform: translateX(-100%); box-shadow: 2px 0 10px rgba(0,0,0,0.5);
             }
             .sidebar.open { transform: translateX(0); }
-            .sidebar::-webkit-scrollbar { width: 16px; }
         }
         .sidebar-overlay {
             display: none; position: fixed; top: 52px; left: 0; right: 0; bottom: 0;
@@ -52,27 +48,25 @@
         }
         @media (max-width: 768px) { .sidebar-overlay.visible { display: block; } }
         .section {
-            background: #1a1a1a; border-radius: 8px; padding: 15px;
-            margin-bottom: 15px; border-left: 3px solid #00d4ff;
+            background: #1a1a1a; border-radius: 8px; padding: 14px;
+            margin-bottom: 14px; border-left: 3px solid #00d4ff;
         }
-        .section h3 { color: #00d4ff; font-size: 14px; margin-bottom: 12px; }
-        .input-group { margin-bottom: 12px; }
-        .input-group label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
+        .section h3 { color: #00d4ff; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; }
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
         input[type="text"], input[type="number"], input[type="range"] {
-            padding: 10px; background: #0a0a0a; border: 1px solid #333;
-            border-radius: 6px; color: #fff; font-size: 14px; width: 100%;
+            padding: 9px; background: #0a0a0a; border: 1px solid #333;
+            border-radius: 6px; color: #fff; font-size: 13px; width: 100%;
         }
-        input[type="number"] { width: 80px; }
-        .range-group { display: flex; align-items: center; gap: 10px; }
+        input[type="number"] { width: 90px; }
+        .range-group { display: flex; align-items: center; gap: 8px; }
         .reset-width-btn {
             background: #ffa502; color: #000; border: none; padding: 8px 12px;
-            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
-            flex-shrink: 0; touch-action: manipulation;
+            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;
         }
-        .reset-width-btn:active { transform: scale(0.95); }
         .btn {
-            width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer;
-            font-weight: bold; font-size: 14px; transition: all 0.2s; touch-action: manipulation;
+            width: 100%; padding: 11px; border: none; border-radius: 7px; cursor: pointer;
+            font-weight: bold; font-size: 13px; transition: all 0.2s; touch-action: manipulation;
         }
         .btn:active { transform: scale(0.98); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -82,37 +76,34 @@
         .btn-warning { background: #ffa502; color: #000; }
         .btn-info { background: #5f27cd; color: #fff; }
         .btn-purple { background: #9b59b6; color: #fff; }
-        .mode-toggle { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .mode-toggle { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
         .mode-btn {
-            padding: 10px; background: #0a0a0a; border: 2px solid #333; border-radius: 6px;
-            color: #888; cursor: pointer; font-size: 12px; transition: all 0.2s;
-            text-align: center; touch-action: manipulation;
+            padding: 9px; background: #0a0a0a; border: 2px solid #333; border-radius: 6px;
+            color: #888; cursor: pointer; font-size: 12px; text-align: center;
         }
-        .mode-btn.active { background: #00d4ff; border-color: #00d4ff; color: #000; }
+        .mode-btn.active { background: #00d4ff; border-color: #00d4ff; color: #000; font-weight: bold; }
         .canvas-area {
             flex: 1; overflow: auto; -webkit-overflow-scrolling: touch;
             background: #0a0a0a; position: relative;
         }
-        .canvas-area::-webkit-scrollbar { width: 20px; }
-        .canvas-area::-webkit-scrollbar-track { background: #0a0a0a; border-radius: 10px; }
-        .canvas-area::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 10px; border: 4px solid #0a0a0a; }
+        .canvas-area::-webkit-scrollbar { width: 12px; }
+        .canvas-area::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 6px; }
         .canvas-area.drag-over {
             background: rgba(0, 212, 255, 0.1);
-            outline: 5px dashed #00d4ff; outline-offset: -10px;
+            outline: 4px dashed #00d4ff; outline-offset: -8px;
         }
         .canvas-viewport { min-height: 100%; padding: 15px; transform-origin: top left; }
         .empty-state {
             display: flex; flex-direction: column; align-items: center;
-            justify-content: center; min-height: calc(100vh - 200px); color: #333; padding: 20px;
+            justify-content: center; min-height: calc(100vh - 200px); color: #555; padding: 20px;
         }
-        .empty-state-icon { font-size: 60px; margin-bottom: 15px; }
-        .empty-state h2 { font-size: 18px; margin-bottom: 10px; }
-        .file-input-wrapper { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .empty-state-icon { font-size: 55px; margin-bottom: 12px; }
+        .empty-state h2 { font-size: 17px; margin-bottom: 8px; color: #aaa; }
+        .file-input-wrapper { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .file-input-btn {
-            display: inline-block; padding: 12px 24px; background: #00d4ff; color: #000;
-            border-radius: 8px; font-weight: bold; cursor: pointer; touch-action: manipulation;
+            display: inline-block; padding: 11px 20px; background: #00d4ff; color: #000;
+            border-radius: 7px; font-weight: bold; cursor: pointer;
         }
-        .file-input-btn:active { transform: scale(0.98); }
         .zip-input-btn { background: #9b59b6; color: #fff; }
         .image-block { background: #000; overflow: hidden; margin-bottom: 0; border: none; position: relative; }
         .image-content { position: relative; background: #000; line-height: 0; }
@@ -120,85 +111,74 @@
             display: block; width: 100%; background-size: 100% 100%;
             background-repeat: no-repeat; background-position: top left;
             pointer-events: all; cursor: crosshair; user-select: none;
-            -webkit-user-select: none; -webkit-user-drag: none;
-            touch-action: none; position: relative;
+            -webkit-user-select: none; position: relative;
         }
-        .merge-divider { position: relative; padding: 12px 0; text-align: center; display: block; }
+        .merge-divider { position: relative; padding: 10px 0; text-align: center; display: block; }
         .merge-btn-inline {
-            display: inline-block; padding: 10px 20px; background: #00d4ff; color: #000;
-            border: none; border-radius: 20px; cursor: pointer; font-weight: bold;
-            font-size: 13px; touch-action: manipulation;
+            display: inline-block; padding: 8px 18px; background: #00d4ff; color: #000;
+            border: none; border-radius: 18px; cursor: pointer; font-weight: bold; font-size: 12px;
         }
-        .merge-btn-inline:active { transform: scale(0.95); }
         .merge-line-container {
-            position: relative; height: 2px; background: #00ff88;
+            position: relative; height: 3px; background: #00ff88;
             display: none; align-items: center; justify-content: center;
         }
         .merge-line-container.visible { display: flex; }
         .unmerge-btn {
             position: absolute; background: #00ff88; color: #000; border: none;
-            padding: 6px 14px; border-radius: 14px; font-size: 12px; font-weight: bold;
-            cursor: pointer; white-space: nowrap; z-index: 10; touch-action: manipulation;
+            padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: bold;
+            cursor: pointer; white-space: nowrap; z-index: 10;
         }
         .cut-line-overlay { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
         .cut-line-container {
-            position: absolute; left: 0; right: 0; height: 44px; margin-top: -22px;
+            position: absolute; left: 0; right: 0; height: 40px; margin-top: -20px;
             z-index: 100; display: flex; align-items: center; cursor: ns-resize;
             pointer-events: all; touch-action: none;
         }
         .cut-line { flex: 1; height: 0; border-top: 3px dashed #ff1493; position: relative; }
         .cut-line-label {
-            position: absolute; left: 50%; top: -25px; transform: translateX(-50%);
-            background: #ff1493; color: white; padding: 4px 10px; border-radius: 12px;
+            position: absolute; left: 50%; top: -23px; transform: translateX(-50%);
+            background: #ff1493; color: white; padding: 3px 8px; border-radius: 10px;
             font-size: 11px; font-weight: bold; white-space: nowrap; pointer-events: none;
         }
         .crop-region {
             position: absolute; left: 0; right: 0;
-            background: repeating-linear-gradient(45deg, rgba(255,0,0,0.3), rgba(255,0,0,0.3) 10px, rgba(200,0,0,0.3) 10px, rgba(200,0,0,0.3) 20px);
+            background: repeating-linear-gradient(45deg, rgba(255,0,0,0.35), rgba(255,0,0,0.35) 10px, rgba(180,0,0,0.35) 10px, rgba(180,0,0,0.35) 20px);
             border-top: 3px solid #ff0000; border-bottom: 3px solid #ff0000;
-            pointer-events: all; z-index: 85; min-height: 30px;
+            pointer-events: all; z-index: 85; min-height: 15px;
         }
         .crop-drag-top, .crop-drag-bottom {
-            position: absolute; left: 0; right: 0; height: 22px;
-            cursor: ns-resize; z-index: 90; touch-action: none;
+            position: absolute; left: 0; right: 0; height: 22px; cursor: ns-resize; z-index: 90;
         }
         .crop-drag-top { top: -11px; }
         .crop-drag-bottom { bottom: -11px; }
         .crop-label {
             position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-            background: #ff0000; color: white; padding: 6px 12px; border-radius: 12px;
+            background: #ff0000; color: white; padding: 4px 8px; border-radius: 10px;
             font-size: 11px; font-weight: bold; white-space: nowrap; pointer-events: none;
         }
         .remove-cut-btn, .remove-crop-btn {
-            background: #ff1493; color: white; border: none; padding: 6px 14px;
-            border-radius: 14px; font-size: 12px; font-weight: bold; cursor: pointer;
-            margin-left: 10px; white-space: nowrap; touch-action: manipulation;
+            background: #ff1493; color: white; border: none; padding: 5px 12px;
+            border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer;
+            margin-left: 8px; white-space: nowrap;
         }
         .remove-crop-btn {
             background: #ff0000; position: absolute; left: 10px; top: 50%;
-            transform: translateY(-50%); pointer-events: all; margin-left: 0;
+            transform: translateY(-50%); margin-left: 0;
         }
         .stats-bar {
-            background: #0d0d0d; border: 1px solid #222; border-radius: 8px;
-            padding: 10px 12px; margin-bottom: 12px; font-size: 11px;
+            background: #0d0d0d; border: 1px solid #222; border-radius: 7px;
+            padding: 8px 10px; margin-bottom: 10px; font-size: 11px;
             display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
         }
         .stat-item { display: flex; flex-direction: column; gap: 2px; }
-        .stat-label { color: #555; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-label { color: #666; font-size: 10px; text-transform: uppercase; }
         .stat-value { color: #00d4ff; font-weight: bold; font-size: 13px; }
         .stat-value.green { color: #00ff88; }
         .stat-value.orange { color: #ffa502; }
-        .mode-indicator {
-            position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.95); padding: 10px 20px; border-radius: 20px;
-            border: 2px solid #00d4ff; font-size: 13px; font-weight: bold;
-            z-index: 1000; display: none; max-width: 90%; text-align: center;
-        }
-        .mode-indicator.visible { display: block; }
         .toast {
             position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.95); color: #00ff88; padding: 12px 24px;
-            border-radius: 25px; border: 2px solid #00ff88; font-size: 14px;
+            border-radius: 25px; border: 2px solid #00ff88; font-size: 13px;
             font-weight: bold; z-index: 10000; opacity: 0; transition: opacity 0.3s;
             pointer-events: none; max-width: 90%; text-align: center;
         }
@@ -206,18 +186,17 @@
         .toast.error { color: #ff4757; border-color: #ff4757; }
         .zoom-controls {
             position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.95);
-            padding: 8px; border-radius: 12px; border: 2px solid #00d4ff;
+            padding: 6px; border-radius: 10px; border: 2px solid #00d4ff;
             display: flex; gap: 5px; z-index: 80;
         }
         .zoom-btn {
-            width: 44px; height: 44px; background: #1a1a1a; border: 1px solid #333;
-            border-radius: 8px; color: #00d4ff; cursor: pointer; font-size: 20px;
-            display: flex; align-items: center; justify-content: center; touch-action: manipulation;
+            width: 40px; height: 40px; background: #1a1a1a; border: 1px solid #333;
+            border-radius: 6px; color: #00d4ff; cursor: pointer; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
         }
-        .zoom-btn:active { background: #00d4ff; color: #000; }
         .zoom-level {
-            color: #00d4ff; font-size: 13px; font-weight: bold; padding: 0 8px;
-            display: flex; align-items: center; min-width: 50px; justify-content: center;
+            color: #00d4ff; font-size: 12px; font-weight: bold; padding: 0 6px;
+            display: flex; align-items: center; min-width: 45px; justify-content: center;
         }
         .progress-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -226,73 +205,37 @@
         }
         .progress-overlay.visible { display: flex; }
         .progress-box {
-            background: #1a1a1a; padding: 25px; border-radius: 10px;
+            background: #1a1a1a; padding: 22px; border-radius: 10px;
             border: 2px solid #00d4ff; width: 100%; max-width: 400px;
         }
-        .progress-bar { width: 100%; height: 30px; background: #0a0a0a; border-radius: 15px; overflow: hidden; margin: 15px 0; }
+        .progress-bar { width: 100%; height: 24px; background: #0a0a0a; border-radius: 12px; overflow: hidden; margin: 12px 0; }
         .progress-fill {
             height: 100%; background: linear-gradient(90deg, #00d4ff, #00ff88);
-            width: 0%; transition: width 0.3s; display: flex; align-items: center;
-            justify-content: center; font-weight: bold; font-size: 12px; color: #000;
+            width: 0%; transition: width 0.2s; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; font-size: 11px; color: #000;
         }
-        .progress-text { text-align: center; color: #888; font-size: 13px; margin-bottom: 10px; }
-        .progress-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .progress-text { text-align: center; color: #888; font-size: 12px; margin-bottom: 8px; }
         .image-info-tooltip {
             position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.85);
-            color: #00d4ff; padding: 6px 12px; border-radius: 6px; font-size: 11px;
-            z-index: 50; pointer-events: none; max-width: calc(100% - 10px); word-break: break-all;
+            color: #00d4ff; padding: 4px 8px; border-radius: 5px; font-size: 11px;
+            z-index: 50; pointer-events: none;
         }
-        .folder-picker-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.95); display: none; align-items: center;
-            justify-content: center; z-index: 10000; padding: 20px;
-        }
-        .folder-picker-overlay.visible { display: flex; }
-        .folder-picker-box {
-            background: #1a1a1a; padding: 25px; border-radius: 10px;
-            border: 2px solid #9b59b6; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto;
-        }
-        .folder-picker-box h3 { color: #9b59b6; margin-bottom: 15px; font-size: 18px; }
-        .folder-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .folder-item {
-            background: #0a0a0a; padding: 12px 15px; border-radius: 8px; border: 2px solid #333;
-            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px;
-        }
-        .folder-item:hover { border-color: #9b59b6; background: #1a1a1a; }
-        .folder-item.selected { border-color: #9b59b6; background: #9b59b6; color: #fff; }
-        .folder-icon { font-size: 20px; }
-        .folder-info { flex: 1; }
-        .folder-name { font-weight: bold; font-size: 14px; }
-        .folder-count { font-size: 11px; color: #888; margin-top: 3px; }
-        .folder-item.selected .folder-count { color: #fff; }
-        .folder-picker-actions { display: flex; gap: 10px; }
         .random-group { display: flex; gap: 8px; align-items: center; }
         .random-id-display {
-            flex: 1; padding: 10px; background: #0a0a0a; border: 1px solid #333;
-            border-radius: 6px; color: #00ff88; font-size: 14px; font-weight: bold;
-            text-align: center; user-select: all;
+            flex: 1; padding: 8px; background: #0a0a0a; border: 1px solid #333;
+            border-radius: 6px; color: #00ff88; font-size: 13px; font-weight: bold;
+            text-align: center;
         }
         .random-btn {
-            background: #00ff88; color: #000; border: none; padding: 10px 15px;
-            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
-            white-space: nowrap; touch-action: manipulation;
+            background: #00ff88; color: #000; border: none; padding: 8px 12px;
+            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;
         }
-        .random-btn:active { transform: scale(0.95); }
         .checkbox-group {
-            display: flex; align-items: center; gap: 8px; margin-top: 8px;
-            padding: 8px; background: #0a0a0a; border-radius: 6px;
+            display: flex; align-items: center; gap: 8px; margin-top: 6px;
+            padding: 6px; background: #0a0a0a; border-radius: 6px;
         }
-        .checkbox-group input[type="checkbox"] {
-            width: 18px; height: 18px; cursor: pointer;
-        }
-        .checkbox-group label {
-            color: #888; font-size: 12px; cursor: pointer; margin: 0;
-        }
-        @media (max-width: 768px) {
-            .header h1 { font-size: 14px; }
-            .section { padding: 12px; }
-            .canvas-viewport { padding: 10px; }
-        }
+        .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+        .checkbox-group label { color: #888; font-size: 12px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -300,8 +243,8 @@
         <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
         <h1>✂️ WEBTOON CUT PRO</h1>
         <div class="header-controls">
-            <button class="btn btn-primary" onclick="exportConfig()" style="width:auto;padding:8px 12px;font-size:12px;">💾</button>
-            <button class="btn btn-warning" onclick="importConfig()" style="width:auto;padding:8px 12px;font-size:12px;">📂</button>
+            <button class="btn btn-primary" onclick="exportConfig()" style="width:auto;padding:7px 12px;font-size:12px;" title="Lưu cấu hình">💾 Lưu</button>
+            <button class="btn btn-warning" onclick="importConfig()" style="width:auto;padding:7px 12px;font-size:12px;" title="Mở cấu hình">📂 Mở</button>
             <input type="file" id="configInput" accept=".json" style="display:none;">
         </div>
     </div>
@@ -310,7 +253,6 @@
 
     <div class="main-container">
         <div class="sidebar" id="sidebar">
-
             <!-- STATS -->
             <div class="section">
                 <h3>📊 Thống Kê</h3>
@@ -320,7 +262,7 @@
                         <span class="stat-value" id="statOriginal">0</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Sau ghép</span>
+                        <span class="stat-label">Khung ghép</span>
                         <span class="stat-value green" id="statMerged">0</span>
                     </div>
                     <div class="stat-item">
@@ -328,77 +270,88 @@
                         <span class="stat-value orange" id="statCuts">0</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Output</span>
+                        <span class="stat-label">Ảnh xuất</span>
                         <span class="stat-value green" id="statOutput">0</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- AUTO CUT CONFIG -->
+            <div class="section">
+                <h3>🤖 Tự Động Cắt Ghép (Smart Cut)</h3>
+                <div class="input-group">
+                    <label>Khung hình tối thiểu (px):</label>
+                    <input type="number" id="minSliceHeightInput" min="300" max="8000" value="1000" step="50">
+                    <p style="font-size:11px;color:#666;margin-top:4px;">
+                        Khoảng cách an toàn tối thiểu giữa các vết cắt (tránh cắt trúng chữ/nhân vật).
+                    </p>
+                </div>
+                <button class="btn btn-info" onclick="runAutoCutAndStitch()" style="margin-bottom:8px;">⚡ Tự Động Cắt & Tái Tạo</button>
+                <button class="btn btn-purple" onclick="runAutoDetectCutLines()">🎯 Tự Động Đặt Vết Cắt (Xem trước)</button>
             </div>
 
             <!-- CONFIG -->
             <div class="section">
                 <h3>⚙️ Cấu Hình</h3>
                 <div class="input-group">
-                    <label>Width đầu ra (px):</label>
+                    <label>Bề rộng ra (px):</label>
                     <div class="range-group">
-                        <input type="range" id="targetWidth" min="720" max="10000" value="1440" step="10">
-                        <input type="number" id="targetWidthInput" min="720" max="10000" value="1440" step="10">
+                        <input type="range" id="targetWidth" min="500" max="6000" value="1440" step="10">
+                        <input type="number" id="targetWidthInput" min="500" max="6000" value="1440" step="10">
                         <button class="reset-width-btn" onclick="resetToOriginalWidth()" title="Reset về size ảnh gốc">↺</button>
                     </div>
-                    <p style="font-size:10px;color:#555;margin-top:5px;">
-                        Ảnh gốc: <span id="originalWidthLabel">--</span>px (max của tất cả ảnh)
+                    <p style="font-size:11px;color:#666;margin-top:4px;">
+                        Ảnh gốc: <span id="originalWidthLabel">--</span>px
                     </p>
                 </div>
                 <div class="input-group">
-                    <label>Prefix tên file output:</label>
-                    <input type="text" id="outputPrefix" value="cut" placeholder="cut">
+                    <label>Prefix file:</label>
+                    <input type="text" id="outputPrefix" value="cut">
                 </div>
                 <div class="input-group">
-                    <label>Random ID:</label>
+                    <label>Session ID:</label>
                     <div class="random-group">
                         <div class="random-id-display" id="randomIdDisplay">abc12</div>
-                        <button class="random-btn" onclick="generateNewRandomID()">🎲 Random</button>
+                        <button class="random-btn" onclick="generateNewRandomID()">🎲</button>
                     </div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="useRandomId" checked>
-                        <label for="useRandomId">Sử dụng Random ID (tắt để tên file đơn giản)</label>
+                        <label for="useRandomId">Thêm Random ID vào tên</label>
                     </div>
-                    <p style="font-size:10px;color:#555;margin-top:4px;">
-                        Bật: cut_abc12_0001.jpg | Tắt: cut_0001.jpg
-                    </p>
                 </div>
             </div>
 
             <!-- MODE -->
             <div class="section">
-                <h3>🎬 Chế Độ</h3>
+                <h3>🎬 Chế Độ Thủ Công</h3>
                 <div class="mode-toggle">
                     <div class="mode-btn active" id="viewMode" onclick="setMode('view')">👁️ Xem</div>
                     <div class="mode-btn" id="cutMode" onclick="setMode('cut')">✂️ Cắt</div>
                     <div class="mode-btn" id="cropMode" onclick="setMode('crop')">🗑️ Crop</div>
                 </div>
-                <div id="cutSettings" style="display:none;margin-top:10px;">
-                    <p style="font-size:11px;color:#666;">Tap vào ảnh để đặt đường cắt<br>Kéo đường cắt để điều chỉnh</p>
+                <div id="cutSettings" style="display:none;margin-top:8px;">
+                    <p style="font-size:11px;color:#888;">Tap lên ảnh để cắm vạch cắt ngang. Kéo đường kẻ để tinh chỉnh.</p>
                 </div>
-                <div id="cropSettings" style="display:none;margin-top:10px;">
-                    <p style="font-size:11px;color:#666;">Tap 2 lần: Y1 → Y2 để tạo vùng crop<br>Kéo viền để điều chỉnh</p>
+                <div id="cropSettings" style="display:none;margin-top:8px;">
+                    <p style="font-size:11px;color:#888;">Tap 2 lần để chọn vùng bỏ (Header/Footer/Quảng cáo).</p>
                 </div>
             </div>
 
             <!-- ACTIONS -->
             <div class="section">
-                <h3>📥 Hành Động</h3>
-                <button class="btn btn-info" onclick="mergeAll()">🔗 Ghép Tất Cả</button>
-                <button class="btn btn-warning" onclick="unmergeAll()" style="margin-top:10px;">↔️ Bỏ Ghép Tất Cả</button>
-                <button class="btn btn-warning" onclick="clearAllCuts()" style="margin-top:10px;">✂️ Xóa Tất Cả Cắt</button>
+                <h3>📥 Thao Tác Khác</h3>
+                <button class="btn btn-warning" onclick="mergeAll()">🔗 Ghép Tất Cả</button>
+                <button class="btn btn-warning" onclick="unmergeAll()" style="margin-top:8px;">↔️ Bỏ Ghép Tất Cả</button>
+                <button class="btn btn-danger" onclick="clearAllCuts()" style="margin-top:8px;">✂️ Xóa Tất Cả Vết Cắt</button>
             </div>
 
             <!-- EXPORT -->
             <div class="section">
                 <h3>💾 Xuất File</h3>
-                <button class="btn btn-success" onclick="downloadAllJPG()" id="downloadAllBtn" style="margin-bottom:10px;">💾 Download All JPG</button>
-                <button class="btn btn-primary" onclick="downloadZIP()" id="downloadZipBtn" style="margin-bottom:10px;">📦 Download ZIP</button>
-                <button class="btn btn-purple" onclick="downloadPDF()" id="downloadPdfBtn">📄 Xuất PDF</button>
-                <button class="btn btn-danger" onclick="clearAll()" style="margin-top:15px;">🗑️ Xóa Tất Cả</button>
+                <button class="btn btn-success" onclick="downloadAllJPG()" id="downloadAllBtn" style="margin-bottom:8px;">💾 Tải từng ảnh JPG</button>
+                <button class="btn btn-primary" onclick="downloadZIP()" id="downloadZipBtn" style="margin-bottom:8px;">📦 Tải ZIP (UniversalZip)</button>
+                <button class="btn btn-purple" onclick="downloadPDF()" id="downloadPdfBtn">📄 Xuất File PDF</button>
+                <button class="btn btn-danger" onclick="clearAll()" style="margin-top:14px;">🗑️ Xóa Tất Cả</button>
             </div>
         </div>
 
@@ -406,12 +359,12 @@
             <div class="canvas-viewport" id="canvasViewport">
                 <div class="empty-state">
                     <div class="empty-state-icon">🎨</div>
-                    <h2 style="color:#333;">Chọn ảnh để bắt đầu</h2>
-                    <p style="color:#222;font-size:13px;margin:10px 0;">Hỗ trợ PC, iOS & Android</p>
+                    <h2>Kéo thả hoặc nạp ảnh để bắt đầu</h2>
+                    <p style="font-size:13px;margin:8px 0;">Hỗ trợ Webtoon dài, tự động cắt thông minh qua khoảng trắng</p>
                     <div class="file-input-wrapper">
-                        <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
+                        <label class="file-input-btn" for="fileInput">📂 Chọn Danh Sách Ảnh</label>
                         <input type="file" id="fileInput" multiple accept="image/*" style="display:none;">
-                        <label class="file-input-btn zip-input-btn" for="zipInput">📦 Chọn ZIP</label>
+                        <label class="file-input-btn zip-input-btn" for="zipInput">📦 Tải File ZIP</label>
                         <input type="file" id="zipInput" accept=".zip" style="display:none;">
                     </div>
                 </div>
@@ -419,7 +372,6 @@
         </div>
     </div>
 
-    <div class="mode-indicator" id="modeIndicator"></div>
     <div class="toast" id="toast"></div>
 
     <div class="zoom-controls" id="zoomControls">
@@ -431,98 +383,163 @@
 
     <div class="progress-overlay" id="progressOverlay">
         <div class="progress-box">
-            <h3 style="color:#00d4ff;margin-bottom:10px;">⏳ Đang xử lý...</h3>
-            <div class="progress-text" id="progressText">Đang chuẩn bị...</div>
+            <h3 style="color:#00d4ff;margin-bottom:8px;">⏳ Đang xử lý...</h3>
+            <div class="progress-text" id="progressText">Chuẩn bị...</div>
             <div class="progress-bar"><div class="progress-fill" id="progressFill">0%</div></div>
-            <div class="progress-actions">
-                <button class="btn btn-danger" onclick="stopProcess()" id="stopBtn" style="display:none;">⏹️ Dừng</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Folder Picker -->
-    <div class="folder-picker-overlay" id="folderPickerOverlay">
-        <div class="folder-picker-box">
-            <h3>📁 Chọn Folder</h3>
-            <div class="folder-list" id="folderList"></div>
-            <div class="folder-picker-actions">
-                <button class="btn btn-success" onclick="confirmFolderSelection()" id="confirmFolderBtn" disabled>✅ Xác Nhận</button>
-                <button class="btn btn-danger" onclick="closeFolderPicker()">❌ Hủy</button>
-            </div>
+            <button class="btn btn-danger" onclick="stopProcess()" id="stopBtn" style="display:none;">⏹️ Dừng Lại</button>
         </div>
     </div>
 
 <script>
-// ==================== CONSTANTS ====================
-const MAX_CANVAS_HEIGHT = 16384;
-const MAX_CANVAS_WIDTH  = 16384;
-const TILE_HEIGHT       = 4096;
+// ==================== UNIVERSAL ZIP ====================
+class UniversalZip {
+    constructor() { this.entries = []; }
+    static crcTable = (() => {
+        const table = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            table[i] = c >>> 0;
+        }
+        return table;
+    })();
+    static crc32(buf) {
+        let crc = -1;
+        for (let i = 0; i < buf.length; i++) crc = (crc >>> 8) ^ UniversalZip.crcTable[(crc ^ buf[i]) & 0xFF];
+        return (crc ^ -1) >>> 0;
+    }
+    static toDosTime(d = new Date()) {
+        const year = Math.max(1980, d.getFullYear());
+        const dosDate = ((year - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+        const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+        return { dosTime, dosDate };
+    }
+    async addFile(path, content, options = {}) {
+        path = path.replace(/\\/g, '/');
+        let rawBytes;
+        if (typeof content === 'string') rawBytes = new TextEncoder().encode(content);
+        else if (content instanceof Uint8Array) rawBytes = content;
+        else if (content instanceof ArrayBuffer) rawBytes = new Uint8Array(content);
+        else if (content instanceof Blob || (typeof File !== 'undefined' && content instanceof File)) {
+            rawBytes = new Uint8Array(await content.arrayBuffer());
+        } else if (!content) rawBytes = new Uint8Array(0);
+        else throw new Error(`[UniversalZip] Unsupported content: "${path}"`);
 
-// ==================== PLATFORM ====================
-const isIOS     = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isAndroid = /Android/i.test(navigator.userAgent);
-const isMobile  = isIOS || isAndroid;
+        const nameBytes = new TextEncoder().encode(path);
+        const { dosTime, dosDate } = UniversalZip.toDosTime(options.date || new Date());
+        this.entries.push({
+            path, nameBytes, data: rawBytes,
+            uncompressedSize: rawBytes.length, compressedSize: rawBytes.length,
+            crc: UniversalZip.crc32(rawBytes), method: 0,
+            dosTime, dosDate, isDir: path.endsWith('/')
+        });
+    }
+    generateBlob(mimeType = 'application/zip') {
+        const parts = [];
+        const centralHeaders = [];
+        let offset = 0;
+        for (const entry of this.entries) {
+            const local = new Uint8Array(30 + entry.nameBytes.length);
+            const lv = new DataView(local.buffer);
+            lv.setUint32(0, 0x04034B50, true);
+            lv.setUint16(4, 20, true);
+            lv.setUint16(6, 0x0800, true);
+            lv.setUint16(8, entry.method, true);
+            lv.setUint16(10, entry.dosTime, true);
+            lv.setUint16(12, entry.dosDate, true);
+            lv.setUint32(14, entry.crc, true);
+            lv.setUint32(18, entry.compressedSize, true);
+            lv.setUint32(22, entry.uncompressedSize, true);
+            lv.setUint16(26, entry.nameBytes.length, true);
+            lv.setUint16(28, 0, true);
+            local.set(entry.nameBytes, 30);
+            parts.push(local, entry.data);
+
+            const central = new Uint8Array(46 + entry.nameBytes.length);
+            const cv = new DataView(central.buffer);
+            cv.setUint32(0, 0x02014B50, true);
+            cv.setUint16(4, 20, true);
+            cv.setUint16(6, 20, true);
+            cv.setUint16(8, 0x0800, true);
+            cv.setUint16(10, entry.method, true);
+            cv.setUint16(12, entry.dosTime, true);
+            cv.setUint16(14, entry.dosDate, true);
+            cv.setUint32(16, entry.crc, true);
+            cv.setUint32(20, entry.compressedSize, true);
+            cv.setUint32(24, entry.uncompressedSize, true);
+            cv.setUint16(28, entry.nameBytes.length, true);
+            cv.setUint16(30, 0, true);
+            cv.setUint16(32, 0, true);
+            cv.setUint16(34, 0, true);
+            cv.setUint16(36, 0, true);
+            cv.setUint32(38, entry.isDir ? 0x10 : 0x20, true);
+            cv.setUint32(42, offset, true);
+            central.set(entry.nameBytes, 46);
+            centralHeaders.push(central);
+            offset += local.length + entry.data.length;
+        }
+        let centralDirSize = 0;
+        for (const c of centralHeaders) { parts.push(c); centralDirSize += c.length; }
+        const eocd = new Uint8Array(22);
+        const ev = new DataView(eocd.buffer);
+        ev.setUint32(0, 0x06054B50, true);
+        ev.setUint16(4, 0, true);
+        ev.setUint16(6, 0, true);
+        ev.setUint16(8, this.entries.length, true);
+        ev.setUint16(10, this.entries.length, true);
+        ev.setUint32(12, centralDirSize, true);
+        ev.setUint32(16, offset, true);
+        ev.setUint16(20, 0, true);
+        parts.push(eocd);
+        return new Blob(parts, { type: mimeType });
+    }
+    download(filename = 'download.zip') {
+        const blob = this.generateBlob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.style.display = 'none';
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 45000);
+    }
+}
 
 // ==================== STATE ====================
-let imageBlocks       = [];
-let mergeStates       = [];
-let currentMode       = 'view';
-let currentZoom       = 1.0;
-let targetWidthValue  = 1440;
-let jpegQualityValue  = 1.0;
-let draggedCutLine    = null;
-let draggedCropRegion = null;
-let cropTempPoint     = null;
-let isProcessing      = false;
-let shouldStop        = false;
-let originalImageWidth= null;
-let picaInstance      = null;
-let currentRandomID   = '';
+const MAX_SAFE_SLICE_HEIGHT = 7000;
 
-// ZIP state
-let currentZipData      = null;
-let selectedFolderPath  = null;
+let imageBlocks = [];
+let mergeStates = [];
+let currentMode = 'view';
+let currentZoom = 1.0;
+let targetWidthValue = 1440;
+let jpegQualityValue = 0.95;
+let draggedCutLine = null;
+let draggedCropRegion = null;
+let cropTempPoint = null;
+let isProcessing = false;
+let shouldStop = false;
+let originalImageWidth = null;
+let currentRandomID = '';
+let pendingConfig = null;
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.pica) {
-        picaInstance = window.pica();
-        console.log('✅ Pica loaded');
-    }
     setupDragDrop();
     setupRangeInputs();
     setupZoomControls();
     setupFileInput();
     setupZipInput();
-    applyZoom();
     generateNewRandomID();
-
-    document.addEventListener('contextmenu', e => {
-        if (e.target.classList.contains('image-chunk')) e.preventDefault();
-    });
-    document.addEventListener('dragstart', e => {
-        if (e.target.classList.contains('image-chunk')) e.preventDefault();
-    });
     setupTouchSupport();
 });
 
-// ==================== RANDOM ID ====================
-function generateRandomID() {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 5; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-}
-
 function generateNewRandomID() {
-    currentRandomID = generateRandomID();
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let res = '';
+    for (let i = 0; i < 5; i++) res += chars[Math.floor(Math.random() * chars.length)];
+    currentRandomID = res;
     document.getElementById('randomIdDisplay').textContent = currentRandomID;
-    console.log('🎲 New Random ID:', currentRandomID);
 }
 
-// ==================== TOAST ====================
 function showToast(msg, isError = false, dur = 3000) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -531,7 +548,6 @@ function showToast(msg, isError = false, dur = 3000) {
     setTimeout(() => t.classList.remove('visible'), dur);
 }
 
-// ==================== SIDEBAR ====================
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebarOverlay').classList.toggle('visible');
@@ -552,7 +568,6 @@ function setupFileInput() {
     });
 }
 
-// ==================== ZIP INPUT ====================
 function setupZipInput() {
     document.getElementById('zipInput').addEventListener('change', async e => {
         const file = e.target.files[0];
@@ -562,220 +577,115 @@ function setupZipInput() {
 }
 
 async function handleZipUpload(file) {
-    showProgress(true, 'Đang đọc ZIP...');
+    showProgress(true, 'Đang đọc file ZIP...');
     try {
         const zip = new JSZip();
         const zipContent = await zip.loadAsync(file);
-        const folders = analyzeFolderStructure(zipContent);
-        if (!folders.length) {
+        const imageEntries = [];
+        zipContent.forEach((path, entry) => {
+            if (!entry.dir && /\.(jpe?g|png|webp|bmp)$/i.test(path)) {
+                imageEntries.push({ path, entry });
+            }
+        });
+
+        if (!imageEntries.length) {
             showProgress(false);
             showToast('⚠️ Không tìm thấy ảnh trong ZIP', true);
             return;
         }
-        currentZipData = { zipContent, folders };
-        if (folders.length === 1) {
-            selectedFolderPath = folders[0].path;
-            await loadImagesFromZip();
-        } else {
-            showProgress(false);
-            showFolderPicker(folders);
+
+        imageEntries.sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
+
+        const files = [];
+        for (let i = 0; i < imageEntries.length; i++) {
+            updateProgress((i / imageEntries.length) * 100, `Giải nén: ${i + 1}/${imageEntries.length}...`);
+            const blob = await imageEntries[i].entry.async('blob');
+            const name = imageEntries[i].path.split('/').pop();
+            files.push(new File([blob], name, { type: blob.type || 'image/jpeg' }));
         }
+
+        await handleFilesUpload(files);
     } catch (err) {
         showProgress(false);
-        showToast('❌ Lỗi đọc ZIP: ' + err.message, true);
+        showToast('❌ Lỗi mở ZIP: ' + err.message, true);
     }
 }
 
-function analyzeFolderStructure(zipContent) {
-    const folderMap = new Map();
-    zipContent.forEach((relativePath, file) => {
-        if (file.dir) return;
-        if (!isImageFile(relativePath)) return;
-        const parts = relativePath.split('/');
-        const folderPath = parts.length > 1 ? parts.slice(0, -1).join('/') : '/';
-        if (!folderMap.has(folderPath)) {
-            folderMap.set(folderPath, {
-                path: folderPath,
-                name: folderPath === '/' ? '📁 Root' : folderPath.split('/').pop(),
-                images: []
-            });
-        }
-        folderMap.get(folderPath).images.push(relativePath);
-    });
-    const folders = Array.from(folderMap.values());
-    folders.forEach(f => f.images.sort((a, b) => a.localeCompare(b, undefined, { numeric: true })));
-    folders.sort((a, b) => a.path.localeCompare(b.path));
-    return folders;
-}
-
-function isImageFile(path) {
-    return /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(path);
-}
-
-function showFolderPicker(folders) {
-    const list = document.getElementById('folderList');
-    list.innerHTML = '';
-    selectedFolderPath = null;
-    folders.forEach(folder => {
-        const item = document.createElement('div');
-        item.className = 'folder-item';
-        item.dataset.path = folder.path;
-        item.onclick = () => selectFolder(folder.path);
-        item.innerHTML = `<div class="folder-icon">📁</div>
-            <div class="folder-info">
-                <div class="folder-name">${folder.name}</div>
-                <div class="folder-count">${folder.images.length} ảnh</div>
-            </div>`;
-        list.appendChild(item);
-    });
-    document.getElementById('folderPickerOverlay').classList.add('visible');
-    document.getElementById('confirmFolderBtn').disabled = true;
-}
-
-function selectFolder(path) {
-    selectedFolderPath = path;
-    document.querySelectorAll('.folder-item').forEach(item => {
-        item.classList.toggle('selected', item.dataset.path === path);
-    });
-    document.getElementById('confirmFolderBtn').disabled = false;
-}
-
-function closeFolderPicker() {
-    document.getElementById('folderPickerOverlay').classList.remove('visible');
-    currentZipData = null;
-    selectedFolderPath = null;
-}
-
-async function confirmFolderSelection() {
-    if (!selectedFolderPath) return;
-    closeFolderPicker();
-    await loadImagesFromZip();
-}
-
-async function loadImagesFromZip() {
-    if (!currentZipData || !selectedFolderPath) return;
-    showProgress(true, 'Đang load ảnh từ ZIP...');
-    const { zipContent, folders } = currentZipData;
-    const folder = folders.find(f => f.path === selectedFolderPath);
-    if (!folder) { showProgress(false); showToast('❌ Không tìm thấy folder', true); return; }
-
-    const isFirst = imageBlocks.length === 0;
-    for (let i = 0; i < folder.images.length; i++) {
-        const imagePath = folder.images[i];
-        const zipEntry = zipContent.file(imagePath);
-        if (!zipEntry) continue;
-        updateProgress((i / folder.images.length) * 100, `Đang load ${i+1}/${folder.images.length}...`);
-        try {
-            const blob = await zipEntry.async('blob');
-            const fileName = imagePath.split('/').pop();
-            const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
-            const dims = await getImageDimensions(file);
-            if (isFirst && imageBlocks.length === 0) {
-                setInitialWidth(dims.width);
-            } else if (dims.width > originalImageWidth) {
-                originalImageWidth = dims.width;
-                document.getElementById('originalWidthLabel').textContent = originalImageWidth;
-            }
-            imageBlocks.push({
-                id: Date.now() + i + Math.random(),
-                file, name: fileName,
-                width: dims.width, height: dims.height,
-                url: URL.createObjectURL(file),
-                cutPoints: [], cropRegions: []
-            });
-        } catch (err) { console.error('Error loading:', imagePath, err); }
-    }
-    rebuildMergeStates();
-    updateProgress(100, 'Hoàn thành!');
-    await sleep(300);
-    showProgress(false);
-    renderAll();
-    updateStats();
-    closeSidebar();
-    showToast(`✅ Đã load ${imageBlocks.length} ảnh từ ZIP`);
-    currentZipData = null;
-    selectedFolderPath = null;
-}
-
-// ==================== DRAG & DROP ====================
 function setupDragDrop() {
-    if (isMobile) return;
     const area = document.getElementById('canvasArea');
     let dragCounter = 0;
-    area.addEventListener('dragenter', e => { e.preventDefault(); e.stopPropagation(); dragCounter++; area.classList.add('drag-over'); });
-    area.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); if (--dragCounter === 0) area.classList.remove('drag-over'); });
-    area.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
+    area.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; area.classList.add('drag-over'); });
+    area.addEventListener('dragleave', e => { e.preventDefault(); if (--dragCounter === 0) area.classList.remove('drag-over'); });
+    area.addEventListener('dragover', e => { e.preventDefault(); });
     area.addEventListener('drop', async e => {
-        e.preventDefault(); e.stopPropagation();
-        dragCounter = 0; area.classList.remove('drag-over');
-        const files = [];
-        if (e.dataTransfer.items) {
-            for (let item of e.dataTransfer.items)
-                if (item.kind === 'file') files.push(item.getAsFile());
-        } else {
-            files.push(...e.dataTransfer.files);
-        }
-        const zipFiles = files.filter(f => f.name.endsWith('.zip'));
-        if (zipFiles.length) { await handleZipUpload(zipFiles[0]); return; }
-        const existing = new Set(imageBlocks.map(b => b.name));
-        const newFiles = files.filter(f => !existing.has(f.name));
-        if (newFiles.length) await handleFilesUpload(newFiles);
+        e.preventDefault(); dragCounter = 0; area.classList.remove('drag-over');
+        const files = Array.from(e.dataTransfer.files);
+        const zips = files.filter(f => f.name.endsWith('.zip'));
+        if (zips.length) await handleZipUpload(zips[0]);
+        else await handleFilesUpload(files);
     });
 }
 
-// ==================== FILE UPLOAD ====================
 async function handleFilesUpload(files) {
-    showProgress(true, 'Đang tải ảnh...');
-    const imageFiles = files.filter(f => {
-        const uuidPat = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidPat.test(f.name.replace(/\.[^.]+$/, ''))) return false;
-        return f.type.startsWith('image/') || isImageFile(f.name);
-    });
-    if (!imageFiles.length) { showProgress(false); showToast('⚠️ Không có ảnh hợp lệ', true); return; }
-    imageFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-    const isFirst = imageBlocks.length === 0;
-    for (let i = 0; i < imageFiles.length; i++) {
-        updateProgress((i / imageFiles.length) * 100, `Đang tải ${i+1}/${imageFiles.length}...`);
+    showProgress(true, 'Đang nạp ảnh...');
+    const validFiles = files.filter(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(f.name));
+    if (!validFiles.length) {
+        showProgress(false);
+        showToast('⚠️ Không có ảnh hợp lệ', true);
+        return;
+    }
+
+    validFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    let maxW = originalImageWidth || 0;
+    for (let i = 0; i < validFiles.length; i++) {
+        updateProgress((i / validFiles.length) * 100, `Đọc ảnh ${i + 1}/${validFiles.length}...`);
         try {
-            const dims = await getImageDimensions(imageFiles[i]);
-            if (isFirst && imageBlocks.length === 0) {
-                setInitialWidth(dims.width);
-            } else if (dims.width > originalImageWidth) {
-                originalImageWidth = dims.width;
-                document.getElementById('originalWidthLabel').textContent = originalImageWidth;
-            }
+            const dims = await getImageDimensions(validFiles[i]);
+            if (dims.width > maxW) maxW = dims.width;
+
             imageBlocks.push({
                 id: Date.now() + i + Math.random(),
-                file: imageFiles[i], name: imageFiles[i].name,
-                width: dims.width, height: dims.height,
-                url: URL.createObjectURL(imageFiles[i]),
-                cutPoints: [], cropRegions: []
+                file: validFiles[i],
+                name: validFiles[i].name,
+                width: dims.width,
+                height: dims.height,
+                url: URL.createObjectURL(validFiles[i]),
+                cutPoints: [],
+                cropRegions: []
             });
-        } catch (err) { console.error('Error:', imageFiles[i].name, err); }
+        } catch (err) {
+            console.error('Error load:', validFiles[i].name, err);
+        }
     }
+
+    originalImageWidth = maxW;
+    document.getElementById('originalWidthLabel').textContent = originalImageWidth;
+    if (imageBlocks.length === validFiles.length) {
+        targetWidthValue = originalImageWidth;
+        document.getElementById('targetWidth').value = targetWidthValue;
+        document.getElementById('targetWidthInput').value = targetWidthValue;
+    }
+
     rebuildMergeStates();
+
+    if (pendingConfig) {
+        applyConfigObject(pendingConfig);
+        pendingConfig = null;
+    }
+
     updateProgress(100, 'Hoàn thành!');
-    await sleep(300);
+    await sleep(200);
     showProgress(false);
     renderAll();
-    updateStats();
     closeSidebar();
-}
-
-function setInitialWidth(w) {
-    originalImageWidth = w;
-    document.getElementById('originalWidthLabel').textContent = w;
-    let auto = Math.max(720, Math.min(10000, w));
-    targetWidthValue = auto;
-    document.getElementById('targetWidth').value = auto;
-    document.getElementById('targetWidthInput').value = auto;
 }
 
 function rebuildMergeStates() {
-    const oldStates = mergeStates.slice();
+    const old = mergeStates.slice();
     mergeStates = [];
     for (let i = 0; i < imageBlocks.length - 1; i++) {
-        mergeStates.push({ index: i, merged: oldStates[i] ? oldStates[i].merged : false });
+        mergeStates.push({ index: i, merged: old[i] ? old[i].merged : false });
     }
 }
 
@@ -783,33 +693,10 @@ function getImageDimensions(file) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
-        img.onload = () => { URL.revokeObjectURL(url); resolve({ width: img.width, height: img.height }); };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load')); };
+        img.onload = () => { URL.revokeObjectURL(url); resolve({ width: img.naturalWidth || img.width, height: img.naturalHeight || img.height }); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Lỗi load ảnh')); };
         img.src = url;
     });
-}
-
-// ==================== STATS ====================
-function updateStats() {
-    const total = imageBlocks.length;
-    document.getElementById('statOriginal').textContent = total;
-
-    let groups = 0;
-    if (total > 0) {
-        let i = 0;
-        while (i < total) {
-            groups++;
-            while (i < total - 1 && mergeStates[i] && mergeStates[i].merged) i++;
-            i++;
-        }
-    }
-    document.getElementById('statMerged').textContent = groups;
-
-    const totalCuts = imageBlocks.reduce((s, b) => s + b.cutPoints.length, 0);
-    document.getElementById('statCuts').textContent = totalCuts;
-
-    const segs = total > 0 ? buildOutputSegments() : [];
-    document.getElementById('statOutput').textContent = segs.length;
 }
 
 // ==================== RENDER ====================
@@ -821,11 +708,11 @@ function renderAll() {
         viewport.innerHTML = `
         <div class="empty-state">
             <div class="empty-state-icon">🎨</div>
-            <h2 style="color:#333;">Chọn ảnh để bắt đầu</h2>
-            <p style="color:#222;font-size:13px;margin:10px 0;">Hỗ trợ PC, iOS & Android</p>
+            <h2>Kéo thả hoặc nạp ảnh để bắt đầu</h2>
+            <p style="font-size:13px;margin:8px 0;">Hỗ trợ Webtoon dài, tự động cắt thông minh qua khoảng trắng</p>
             <div class="file-input-wrapper">
-                <label class="file-input-btn" for="fileInput">📂 Chọn Ảnh</label>
-                <label class="file-input-btn zip-input-btn" for="zipInput">📦 Chọn ZIP</label>
+                <label class="file-input-btn" for="fileInput">📂 Chọn Danh Sách Ảnh</label>
+                <label class="file-input-btn zip-input-btn" for="zipInput">📦 Tải File ZIP</label>
             </div>
         </div>`;
         updateStats();
@@ -839,12 +726,12 @@ function renderAll() {
             if (isMerged) {
                 const ml = document.createElement('div');
                 ml.className = 'merge-line-container visible';
-                ml.innerHTML = `<button class="unmerge-btn" onclick="toggleMerge(${index})">Bỏ ghép</button>`;
+                ml.innerHTML = `<button class="unmerge-btn" onclick="toggleMerge(${index})">↔ Bỏ ghép</button>`;
                 viewport.appendChild(ml);
             } else {
                 const md = document.createElement('div');
                 md.className = 'merge-divider';
-                md.innerHTML = `<button class="merge-btn-inline" onclick="toggleMerge(${index})">🔗 Ghép Ảnh</button>`;
+                md.innerHTML = `<button class="merge-btn-inline" onclick="toggleMerge(${index})">🔗 Ghép với ảnh dưới</button>`;
                 viewport.appendChild(md);
             }
         }
@@ -857,7 +744,6 @@ function createBlockElement(block, index) {
     const div = document.createElement('div');
     div.className = 'image-block';
     div.id = `block-${index}`;
-    div.dataset.blockIndex = index;
 
     const content = document.createElement('div');
     content.className = 'image-content';
@@ -865,20 +751,14 @@ function createBlockElement(block, index) {
     const imgDiv = document.createElement('div');
     imgDiv.className = 'image-chunk';
     imgDiv.style.backgroundImage = `url("${block.url}")`;
-    imgDiv.dataset.blockIndex = index;
-    const aspectRatio = (block.height / block.width) * 100;
-    imgDiv.style.paddingBottom = aspectRatio + '%';
+    imgDiv.style.paddingBottom = ((block.height / block.width) * 100) + '%';
     imgDiv.onclick = e => handleImageClick(e, block, index);
-
-    const tempImg = new Image();
-    tempImg.onload = () => renderAllOverlays(block, index, content);
-    tempImg.src = block.url;
 
     content.appendChild(imgDiv);
 
     const tooltip = document.createElement('div');
     tooltip.className = 'image-info-tooltip';
-    tooltip.textContent = `${String(index+1).padStart(3,'0')}. ${block.name} (${block.width}×${block.height})`;
+    tooltip.textContent = `#${index + 1} • ${block.name} (${block.width}×${block.height}px)`;
     content.appendChild(tooltip);
 
     const cutOverlay = document.createElement('div');
@@ -887,6 +767,8 @@ function createBlockElement(block, index) {
     content.appendChild(cutOverlay);
 
     div.appendChild(content);
+
+    requestAnimationFrame(() => renderAllOverlays(block, index, content));
     return div;
 }
 
@@ -894,11 +776,16 @@ function renderAllOverlays(block, blockIndex, container) {
     const cutOverlay = document.getElementById(`cut-overlay-${blockIndex}`);
     if (!cutOverlay) return;
     cutOverlay.innerHTML = '';
+
     const imgDiv = container.querySelector('.image-chunk');
-    if (!imgDiv || !imgDiv.offsetHeight) return;
+    if (!imgDiv || !imgDiv.offsetHeight) {
+        setTimeout(() => renderAllOverlays(block, blockIndex, container), 50);
+        return;
+    }
     const scale = imgDiv.offsetHeight / block.height;
+
     block.cutPoints.forEach(y => cutOverlay.appendChild(createCutLine(block, y, blockIndex, scale)));
-    block.cropRegions.forEach((region, idx) => cutOverlay.appendChild(createCropRegion(block, region, blockIndex, idx, scale)));
+    block.cropRegions.forEach((region, rIdx) => cutOverlay.appendChild(createCropRegion(block, region, blockIndex, rIdx, scale)));
 }
 
 function createCutLine(block, y, blockIndex, scale) {
@@ -926,7 +813,7 @@ function createCutLine(block, y, blockIndex, scale) {
 
     const btn = document.createElement('button');
     btn.className = 'remove-cut-btn';
-    btn.textContent = 'Bỏ';
+    btn.textContent = '✕ Xóa';
     btn.onclick = e => { e.stopPropagation(); removeCutPoint(block, y, blockIndex); };
 
     container.appendChild(line);
@@ -938,29 +825,39 @@ function createCropRegion(block, region, blockIndex, regionIdx, scale) {
     const container = document.createElement('div');
     container.className = 'crop-region';
     container.style.top = (region.startY * scale) + 'px';
-    container.style.height = ((region.endY - region.startY) * scale) + 'px';
+    container.style.height = Math.max(10, (region.endY - region.startY) * scale) + 'px';
 
     const label = document.createElement('div');
     label.className = 'crop-label';
-    label.textContent = `${region.startY}-${region.endY}px`;
+    label.textContent = `Bỏ: ${region.startY} - ${region.endY}px`;
     container.appendChild(label);
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-crop-btn';
-    removeBtn.textContent = 'Bỏ';
+    removeBtn.textContent = '✕ Khôi phục';
     removeBtn.onclick = () => removeCropRegion(blockIndex, regionIdx);
     container.appendChild(removeBtn);
 
     const topDrag = document.createElement('div');
     topDrag.className = 'crop-drag-top';
-    const startTop = e => { e.stopPropagation(); const touch = e.touches ? e.touches[0] : e; startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'top', scale); if (e.preventDefault) e.preventDefault(); };
+    const startTop = e => {
+        e.stopPropagation();
+        const touch = e.touches ? e.touches[0] : e;
+        startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'top');
+        if (e.preventDefault) e.preventDefault();
+    };
     topDrag.addEventListener('mousedown', startTop);
     topDrag.addEventListener('touchstart', startTop, { passive: false });
     container.appendChild(topDrag);
 
     const bottomDrag = document.createElement('div');
     bottomDrag.className = 'crop-drag-bottom';
-    const startBottom = e => { e.stopPropagation(); const touch = e.touches ? e.touches[0] : e; startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'bottom', scale); if (e.preventDefault) e.preventDefault(); };
+    const startBottom = e => {
+        e.stopPropagation();
+        const touch = e.touches ? e.touches[0] : e;
+        startDragCropEdge(touch, block, region, blockIndex, regionIdx, 'bottom');
+        if (e.preventDefault) e.preventDefault();
+    };
     bottomDrag.addEventListener('mousedown', startBottom);
     bottomDrag.addEventListener('touchstart', startBottom, { passive: false });
     container.appendChild(bottomDrag);
@@ -968,48 +865,59 @@ function createCropRegion(block, region, blockIndex, regionIdx, scale) {
     return container;
 }
 
+// ==================== INTERACTION ====================
+function setMode(mode) {
+    currentMode = mode;
+    ['view', 'cut', 'crop'].forEach(m => document.getElementById(m + 'Mode').classList.toggle('active', m === mode));
+    document.getElementById('cutSettings').style.display = mode === 'cut' ? 'block' : 'none';
+    document.getElementById('cropSettings').style.display = mode === 'crop' ? 'block' : 'none';
+    cropTempPoint = null;
+}
+
 function handleImageClick(e, block, blockIndex) {
+    if (currentMode === 'view') return;
+
     const imgDiv = e.target;
     const rect = imgDiv.getBoundingClientRect();
     const clickY = (e.clientY - rect.top) / currentZoom;
     const displayHeight = rect.height / currentZoom;
     const scale = displayHeight / block.height;
     const actualY = Math.round(clickY / scale);
+
     if (actualY <= 0 || actualY >= block.height) return;
 
     if (currentMode === 'cut') {
         if (!block.cutPoints.includes(actualY)) {
             block.cutPoints.push(actualY);
             block.cutPoints.sort((a, b) => a - b);
-            const content = imgDiv.closest('.image-content');
-            renderAllOverlays(block, blockIndex, content);
+            renderAllOverlays(block, blockIndex, imgDiv.closest('.image-content'));
             updateStats();
         }
     } else if (currentMode === 'crop') {
         if (!cropTempPoint) {
             cropTempPoint = { blockIndex, y: actualY };
-            showModeIndicator(`🗑️ Crop: Y1 = ${actualY}px<br>Tap Y2 →`);
+            showToast(`🗑️ Điểm 1: ${actualY}px. Hãy tap tiếp điểm 2`);
         } else if (cropTempPoint.blockIndex === blockIndex) {
             const startY = Math.min(cropTempPoint.y, actualY);
-            const endY   = Math.max(cropTempPoint.y, actualY);
-            block.cropRegions.push({ startY, endY });
+            const endY = Math.max(cropTempPoint.y, actualY);
+            if (endY - startY > 5) {
+                block.cropRegions.push({ startY, endY });
+                renderAllOverlays(block, blockIndex, imgDiv.closest('.image-content'));
+                updateStats();
+            }
             cropTempPoint = null;
-            hideModeIndicator();
-            const content = imgDiv.closest('.image-content');
-            renderAllOverlays(block, blockIndex, content);
-            updateStats();
+        } else {
+            cropTempPoint = { blockIndex, y: actualY };
+            showToast(`🗑️ Đổi sang ảnh #${blockIndex + 1}: Điểm 1 = ${actualY}px`);
         }
     }
 }
 
 function removeCutPoint(block, y, blockIndex) {
-    const idx = block.cutPoints.indexOf(y);
-    if (idx > -1) {
-        block.cutPoints.splice(idx, 1);
-        const blockEl = document.getElementById(`block-${blockIndex}`);
-        if (blockEl) renderAllOverlays(block, blockIndex, blockEl.querySelector('.image-content'));
-        updateStats();
-    }
+    block.cutPoints = block.cutPoints.filter(p => p !== y);
+    const blockEl = document.getElementById(`block-${blockIndex}`);
+    if (blockEl) renderAllOverlays(block, blockIndex, blockEl.querySelector('.image-content'));
+    updateStats();
 }
 
 function removeCropRegion(blockIndex, regionIdx) {
@@ -1019,21 +927,71 @@ function removeCropRegion(blockIndex, regionIdx) {
     updateStats();
 }
 
-// ==================== TOUCH ====================
-function setupTouchSupport() {
-    document.addEventListener('touchmove', e => {
-        if (draggedCutLine || draggedCropRegion) handleTouchMove(e);
-    }, { passive: false });
-    document.addEventListener('touchend', e => {
-        if (draggedCutLine || draggedCropRegion) handleTouchEnd(e);
-    });
+function toggleMerge(index) {
+    if (mergeStates[index]) {
+        mergeStates[index].merged = !mergeStates[index].merged;
+        renderAll();
+    }
 }
 
-function handleTouchMove(e) {
+function mergeAll() {
+    mergeStates.forEach(s => s.merged = true);
+    renderAll();
+    closeSidebar();
+}
+function unmergeAll() {
+    mergeStates.forEach(s => s.merged = false);
+    renderAll();
+    closeSidebar();
+}
+function clearAllCuts() {
+    imageBlocks.forEach(b => { b.cutPoints = []; b.cropRegions = []; });
+    renderAll();
+    closeSidebar();
+}
+
+function resetToOriginalWidth() {
+    if (originalImageWidth) {
+        targetWidthValue = originalImageWidth;
+        document.getElementById('targetWidth').value = targetWidthValue;
+        document.getElementById('targetWidthInput').value = targetWidthValue;
+        showToast(`✅ Đã reset về ${targetWidthValue}px`);
+        updateStats();
+    }
+}
+
+// ==================== DRAG ====================
+function setupTouchSupport() {
+    document.addEventListener('touchmove', e => {
+        if (draggedCutLine || draggedCropRegion) handleDragMove(e.touches[0], e);
+    }, { passive: false });
+    document.addEventListener('touchend', handleDragEnd);
+    document.addEventListener('mousemove', e => {
+        if (draggedCutLine || draggedCropRegion) handleDragMove(e, e);
+    });
+    document.addEventListener('mouseup', handleDragEnd);
+}
+
+function startDragCutLine(touch, block, oldY, blockIndex) {
+    const blockEl = document.getElementById(`block-${blockIndex}`);
+    const imgDiv = blockEl.querySelector('.image-chunk');
+    const rect = imgDiv.getBoundingClientRect();
+    const scale = (rect.height / currentZoom) / block.height;
+    draggedCutLine = { block, oldY, blockIndex, rect, scale, imgDiv, zoom: currentZoom };
+}
+
+function startDragCropEdge(touch, block, region, blockIndex, regionIdx, edge) {
+    const blockEl = document.getElementById(`block-${blockIndex}`);
+    const imgDiv = blockEl.querySelector('.image-chunk');
+    const rect = imgDiv.getBoundingClientRect();
+    const scale = (rect.height / currentZoom) / block.height;
+    draggedCropRegion = { block, region, blockIndex, regionIdx, edge, rect, scale, imgDiv, zoom: currentZoom };
+}
+
+function handleDragMove(point, e) {
+    if (e && e.cancelable) e.preventDefault();
     if (draggedCutLine) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const mouseY = (touch.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
+        const mouseY = (point.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
         let actualY = Math.round(mouseY / draggedCutLine.scale);
         actualY = Math.max(1, Math.min(draggedCutLine.block.height - 1, actualY));
         const lc = document.querySelector(`[data-block-index="${draggedCutLine.blockIndex}"][data-cut-y="${draggedCutLine.oldY}"]`);
@@ -1041,779 +999,605 @@ function handleTouchMove(e) {
             lc.style.top = (actualY * draggedCutLine.scale) + 'px';
             const label = lc.querySelector('.cut-line-label');
             if (label) label.textContent = `${actualY}px`;
+            draggedCutLine.currentY = actualY;
         }
     } else if (draggedCropRegion) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const mouseY = (touch.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
-        let actualY = Math.max(0, Math.min(draggedCropRegion.block.height, Math.round(mouseY / draggedCropRegion.scale)));
+        const mouseY = (point.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
+        let actualY = Math.round(mouseY / draggedCropRegion.scale);
+        actualY = Math.max(0, Math.min(draggedCropRegion.block.height, actualY));
         if (draggedCropRegion.edge === 'top') {
-            if (actualY < draggedCropRegion.region.endY - 10) draggedCropRegion.region.startY = actualY;
+            if (actualY < draggedCropRegion.region.endY - 5) draggedCropRegion.region.startY = actualY;
         } else {
-            if (actualY > draggedCropRegion.region.startY + 10) draggedCropRegion.region.endY = actualY;
+            if (actualY > draggedCropRegion.region.startY + 5) draggedCropRegion.region.endY = actualY;
         }
-        const content = draggedCropRegion.imgDiv.closest('.image-content');
-        renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
+        renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, draggedCropRegion.imgDiv.closest('.image-content'));
     }
 }
 
-function handleTouchEnd(e) {
+function handleDragEnd() {
     if (draggedCutLine) {
-        const touch = e.changedTouches[0];
-        const mouseY = (touch.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
-        let actualY = Math.max(1, Math.min(draggedCutLine.block.height - 1, Math.round(mouseY / draggedCutLine.scale)));
-        if (actualY !== draggedCutLine.oldY) {
-            const oldIdx = draggedCutLine.block.cutPoints.indexOf(draggedCutLine.oldY);
-            if (oldIdx > -1) draggedCutLine.block.cutPoints.splice(oldIdx, 1);
-            if (!draggedCutLine.block.cutPoints.includes(actualY)) {
-                draggedCutLine.block.cutPoints.push(actualY);
-                draggedCutLine.block.cutPoints.sort((a, b) => a - b);
-            }
-            const content = draggedCutLine.imgDiv.closest('.image-content');
-            renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
-            updateStats();
+        const finalY = draggedCutLine.currentY || draggedCutLine.oldY;
+        draggedCutLine.block.cutPoints = draggedCutLine.block.cutPoints.filter(p => p !== draggedCutLine.oldY);
+        if (!draggedCutLine.block.cutPoints.includes(finalY)) {
+            draggedCutLine.block.cutPoints.push(finalY);
+            draggedCutLine.block.cutPoints.sort((a, b) => a - b);
         }
+        renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, draggedCutLine.imgDiv.closest('.image-content'));
         draggedCutLine = null;
-    } else if (draggedCropRegion) {
+        updateStats();
+    }
+    if (draggedCropRegion) {
         draggedCropRegion = null;
         updateStats();
     }
 }
 
-function startDragCutLine(e, block, oldY, blockIndex) {
-    const blockEl = document.getElementById(`block-${blockIndex}`);
-    const imgDiv = blockEl.querySelector('.image-chunk');
-    const rect = imgDiv.getBoundingClientRect();
-    const scale = (rect.height / currentZoom) / block.height;
-    draggedCutLine = { block, oldY, blockIndex, rect, scale, imgDiv, zoom: currentZoom };
-
-    if (!isMobile) {
-        document.onmousemove = e => {
-            if (!draggedCutLine) return;
-            const mouseY = (e.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
-            let actualY = Math.max(1, Math.min(draggedCutLine.block.height - 1, Math.round(mouseY / draggedCutLine.scale)));
-            const lc = document.querySelector(`[data-block-index="${draggedCutLine.blockIndex}"][data-cut-y="${draggedCutLine.oldY}"]`);
-            if (lc) {
-                lc.style.top = (actualY * draggedCutLine.scale) + 'px';
-                const label = lc.querySelector('.cut-line-label');
-                if (label) label.textContent = `${actualY}px`;
-            }
-        };
-        document.onmouseup = e => {
-            if (!draggedCutLine) return;
-            const mouseY = (e.clientY - draggedCutLine.rect.top) / draggedCutLine.zoom;
-            let actualY = Math.max(1, Math.min(draggedCutLine.block.height - 1, Math.round(mouseY / draggedCutLine.scale)));
-            if (actualY !== draggedCutLine.oldY) {
-                const oldIdx = draggedCutLine.block.cutPoints.indexOf(draggedCutLine.oldY);
-                if (oldIdx > -1) draggedCutLine.block.cutPoints.splice(oldIdx, 1);
-                if (!draggedCutLine.block.cutPoints.includes(actualY)) {
-                    draggedCutLine.block.cutPoints.push(actualY);
-                    draggedCutLine.block.cutPoints.sort((a, b) => a - b);
-                }
-                const content = draggedCutLine.imgDiv.closest('.image-content');
-                renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, content);
-                updateStats();
-            }
-            draggedCutLine = null;
-            document.onmousemove = null;
-            document.onmouseup = null;
-        };
-    }
-}
-
-function startDragCropEdge(e, block, region, blockIndex, regionIdx, edge, scale) {
-    const blockEl = document.getElementById(`block-${blockIndex}`);
-    const imgDiv = blockEl.querySelector('.image-chunk');
-    const rect = imgDiv.getBoundingClientRect();
-    const currentScale = (rect.height / currentZoom) / block.height;
-    draggedCropRegion = { block, region, blockIndex, regionIdx, edge, rect, scale: currentScale, imgDiv, zoom: currentZoom };
-
-    if (!isMobile) {
-        document.onmousemove = e => {
-            if (!draggedCropRegion) return;
-            const mouseY = (e.clientY - draggedCropRegion.rect.top) / draggedCropRegion.zoom;
-            let actualY = Math.max(0, Math.min(draggedCropRegion.block.height, Math.round(mouseY / draggedCropRegion.scale)));
-            if (draggedCropRegion.edge === 'top') {
-                if (actualY < draggedCropRegion.region.endY - 10) draggedCropRegion.region.startY = actualY;
-            } else {
-                if (actualY > draggedCropRegion.region.startY + 10) draggedCropRegion.region.endY = actualY;
-            }
-            const content = draggedCropRegion.imgDiv.closest('.image-content');
-            renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, content);
-        };
-        document.onmouseup = () => {
-            draggedCropRegion = null;
-            document.onmousemove = null;
-            document.onmouseup = null;
-            updateStats();
-        };
-    }
-}
-
-// ==================== MODE ====================
-function setMode(mode) {
-    currentMode = mode;
-    ['view','cut','crop'].forEach(m => document.getElementById(m+'Mode').classList.toggle('active', m === mode));
-    document.getElementById('cutSettings').style.display  = mode === 'cut'  ? 'block' : 'none';
-    document.getElementById('cropSettings').style.display = mode === 'crop' ? 'block' : 'none';
-    cropTempPoint = null;
-    hideModeIndicator();
-}
-
-function showModeIndicator(text) {
-    const el = document.getElementById('modeIndicator');
-    el.innerHTML = text;
-    el.classList.add('visible');
-}
-function hideModeIndicator() {
-    document.getElementById('modeIndicator').classList.remove('visible');
-}
-
-// ==================== MERGE ====================
-function toggleMerge(index) {
-    mergeStates[index].merged = !mergeStates[index].merged;
-    renderAll();
-}
-function mergeAll()    { mergeStates.forEach(s => s.merged = true);  renderAll(); closeSidebar(); }
-function unmergeAll()  { mergeStates.forEach(s => s.merged = false); renderAll(); closeSidebar(); }
-function clearAllCuts(){ imageBlocks.forEach(b => { b.cutPoints = []; b.cropRegions = []; }); renderAll(); closeSidebar(); }
-
-function resetToOriginalWidth() {
-    if (originalImageWidth !== null) {
-        const w = Math.max(720, Math.min(10000, originalImageWidth));
-        targetWidthValue = w;
-        document.getElementById('targetWidth').value = w;
-        document.getElementById('targetWidthInput').value = w;
-        showToast(`✅ Đã reset về ${w}px`);
-    } else {
-        showToast('⚠️ Chưa có ảnh nào', true);
-    }
-}
-
-// ==================== BUILD SEGMENTS ====================
-function buildOutputSegments() {
-    if (!imageBlocks.length) return [];
-    const segments = [];
-    let i = 0;
-    
-    while (i < imageBlocks.length) {
-        let groupEnd = i;
-        while (groupEnd < imageBlocks.length - 1 && mergeStates[groupEnd] && mergeStates[groupEnd].merged) {
-            groupEnd++;
-        }
-        
-        const blocksInGroup = imageBlocks.slice(i, groupEnd + 1);
-        
-        // Tính tổng chiều cao sau resize (theo tỉ lệ riêng của từng ảnh)
-        let totalHeightAfterResize = 0;
-        const blockMetadata = [];
-        
-        blocksInGroup.forEach(block => {
-            const scale = targetWidthValue / block.width;
-            const resizedHeight = Math.round(block.height * scale);
-            const offset = totalHeightAfterResize;
-            
-            blockMetadata.push({
-                block,
-                scale,
-                resizedHeight,
-                offsetInGroup: offset,
-                originalOffset: blocksInGroup.slice(0, blocksInGroup.indexOf(block))
-                    .reduce((sum, b) => sum + b.height, 0)
-            });
-            
-            totalHeightAfterResize += resizedHeight;
-        });
-        
-        // Thu thập cut points và crop regions ở tọa độ sau resize
-        const absCutPoints = [];
-        const absCropRegions = [];
-        
-        blockMetadata.forEach(meta => {
-            // Cut points
-            meta.block.cutPoints.forEach(y => {
-                const scaledY = Math.round(y * meta.scale);
-                const absY = meta.offsetInGroup + scaledY;
-                if (!absCutPoints.includes(absY)) absCutPoints.push(absY);
-            });
-            
-            // Crop regions
-            meta.block.cropRegions.forEach(r => {
-                absCropRegions.push({
-                    startY: meta.offsetInGroup + Math.round(r.startY * meta.scale),
-                    endY: meta.offsetInGroup + Math.round(r.endY * meta.scale)
-                });
-            });
-        });
-        
-        absCutPoints.sort((a, b) => a - b);
-        
-        const points = [0, ...absCutPoints, totalHeightAfterResize];
-        const safeLimit = MAX_CANVAS_HEIGHT * 0.85;
-        
-        for (let j = 0; j < points.length - 1; j++) {
-            const rawStart = points[j];
-            const rawEnd = points[j + 1];
-            const netHeight = calcNetHeight(rawStart, rawEnd, absCropRegions);
-            
-            if (netHeight > safeLimit) {
-                const mid = Math.round((rawStart + rawEnd) / 2);
-                [[rawStart, mid], [mid, rawEnd]].forEach(([s, e]) => {
-                    segments.push({
-                        blockMetadata,
-                        totalHeightAfterResize,
-                        startY: s,
-                        endY: e,
-                        absCropRegions
-                    });
-                });
-            } else {
-                segments.push({
-                    blockMetadata,
-                    totalHeightAfterResize,
-                    startY: rawStart,
-                    endY: rawEnd,
-                    absCropRegions
-                });
-            }
-        }
-        
-        i = groupEnd + 1;
-    }
-    
-    return segments;
-}
-
-function calcNetHeight(startY, endY, cropRegions) {
-    let h = endY - startY;
-    cropRegions.forEach(r => {
-        const os = Math.max(r.startY, startY);
-        const oe = Math.min(r.endY, endY);
-        if (oe > os) h -= (oe - os);
-    });
-    return Math.max(h, 0);
-}
-
-// ==================== BUILD FILENAME ====================
-function buildFilename(prefix, index, randomID = '', ext = 'jpg') {
-    const cleanPrefix = prefix.replace(/_+$/, '');
-    const num = String(index + 1).padStart(4, '0');
-    const useRandom = document.getElementById('useRandomId').checked;
-    
-    if (useRandom && randomID) {
-        return `${cleanPrefix}_${randomID}_${num}.${ext}`;
-    }
-    return `${cleanPrefix}_${num}.${ext}`;
-}
-
-// ==================== SAFE DOWNLOAD ====================
-async function downloadBlobSafely(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    
-    setTimeout(() => {
-        URL.revokeObjectURL(url);
-        console.log(`🗑️ Cleaned: ${filename}`);
-    }, 15000);
-}
-
-// ==================== DOWNLOAD QUEUE ====================
-class DownloadQueue {
-    constructor(batchSize = 2, delayMs = 600) {
-        this.queue = [];
-        this.batchSize = batchSize;
-        this.delayMs = delayMs;
-        this.downloading = false;
-        this.downloadedCount = 0;
-    }
-
-    add(item) {
-        this.queue.push(item);
-        if (!this.downloading) {
-            this.processQueue();
-        }
-    }
-
-    async processQueue() {
-        this.downloading = true;
-
-        while (this.queue.length > 0 && !shouldStop) {
-            const batch = this.queue.splice(0, this.batchSize);
-            
-            await Promise.all(batch.map(async (item) => {
-                if (item.blob) {
-                    await downloadBlobSafely(item.blob, item.filename);
-                    this.downloadedCount++;
-                    console.log(`✅ Downloaded [${this.downloadedCount}]: ${item.filename}`);
-                }
-            }));
-
-            if (this.queue.length > 0) {
-                await sleep(this.delayMs);
-            }
-        }
-
-        this.downloading = false;
-    }
-
-    getDownloadedCount() {
-        return this.downloadedCount;
-    }
-
-    reset() {
-        this.queue = [];
-        this.downloading = false;
-        this.downloadedCount = 0;
-    }
-}
-
-// ==================== PROCESS SEGMENT (NEW LOGIC) ====================
-async function processSegment(segment) {
-    const { blockMetadata, totalHeightAfterResize, startY, endY, absCropRegions } = segment;
-    
-    const netH = calcNetHeight(startY, endY, absCropRegions);
-    const width = targetWidthValue;
-    const height = netH;
-
-    if (!netH || !height) {
-        console.warn('Segment empty after crop');
-        return null;
-    }
-
-    if (width > MAX_CANVAS_WIDTH || height > MAX_CANVAS_HEIGHT) {
-        throw new Error(`Kích thước ${width}x${height}px vượt giới hạn canvas.`);
-    }
-
-    console.log(`🎨 Segment [${startY}-${endY}] netH=${netH} → ${width}x${height}px`);
-
-    if (netH > 8192 || height > 8192) {
-        return processTiledSegment(segment, width, height);
-    }
-    return processStandardSegment(segment, width, height);
-}
-
-// ==================== STANDARD PROCESS (RESIZE THEO TỈ LỆ) ====================
-async function processStandardSegment(segment, finalW, finalH) {
-    const { blockMetadata, startY, endY, absCropRegions } = segment;
-    
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = finalW;
-    finalCanvas.height = finalH;
-    const ctx = finalCanvas.getContext('2d', { willReadFrequently: false });
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
-    const drawRanges = subtractCropRegions(startY, endY, absCropRegions);
-    let destY = 0;
-
-    for (const [rangeStart, rangeEnd] of drawRanges) {
-        for (const meta of blockMetadata) {
-            const blockStart = meta.offsetInGroup;
-            const blockEnd = meta.offsetInGroup + meta.resizedHeight;
-            
-            const overlapStart = Math.max(rangeStart, blockStart);
-            const overlapEnd = Math.min(rangeEnd, blockEnd);
-            
-            if (overlapEnd > overlapStart) {
-                const img = await loadImageFromUrl(meta.block.url);
-                
-                // Tính toán vùng source từ ảnh gốc
-                const srcStartInResized = overlapStart - blockStart;
-                const srcEndInResized = overlapEnd - blockStart;
-                
-                // Chuyển về tọa độ ảnh gốc
-                const srcY = Math.round(srcStartInResized / meta.scale);
-                const srcH = Math.round((srcEndInResized - srcStartInResized) / meta.scale);
-                
-                const destH = overlapEnd - overlapStart;
-                
-                // Vẽ trực tiếp lên canvas final với resize
-                ctx.drawImage(
-                    img,
-                    0, srcY, meta.block.width, srcH,
-                    0, destY, finalW, destH
-                );
-                
-                destY += destH;
-            }
-        }
-    }
-
-    return new Promise(r => finalCanvas.toBlob(r, 'image/jpeg', jpegQualityValue));
-}
-
-// ==================== TILED PROCESS (RESIZE THEO TỈ LỆ) ====================
-async function processTiledSegment(segment, finalW, finalH) {
-    const { blockMetadata, startY, endY, absCropRegions } = segment;
-    const netH = calcNetHeight(startY, endY, absCropRegions);
-    
-    console.log(`🧩 Tile: ${finalW}x${finalH} (net=${netH})`);
-
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = finalW;
-    finalCanvas.height = finalH;
-    const finalCtx = finalCanvas.getContext('2d', { willReadFrequently: false });
-    finalCtx.imageSmoothingEnabled = true;
-    finalCtx.imageSmoothingQuality = 'high';
-
-    const numTiles = Math.ceil(netH / TILE_HEIGHT);
-
-    for (let t = 0; t < numTiles; t++) {
-        const tNetStart = t * TILE_HEIGHT;
-        const tNetEnd = Math.min((t + 1) * TILE_HEIGHT, netH);
-        const tNetH = tNetEnd - tNetStart;
-
-        const { absStart, absEnd } = netToAbsRange(startY, tNetStart, tNetEnd, absCropRegions);
-        const drawRanges = subtractCropRegions(absStart, absEnd, absCropRegions);
-
-        const tileCanvas = document.createElement('canvas');
-        tileCanvas.width = finalW;
-        tileCanvas.height = tNetH;
-        const tileCtx = tileCanvas.getContext('2d', { willReadFrequently: false });
-        tileCtx.imageSmoothingEnabled = true;
-        tileCtx.imageSmoothingQuality = 'high';
-
-        let tileDestY = 0;
-        
-        for (const [rangeStart, rangeEnd] of drawRanges) {
-            for (const meta of blockMetadata) {
-                const blockStart = meta.offsetInGroup;
-                const blockEnd = meta.offsetInGroup + meta.resizedHeight;
-                
-                const os = Math.max(rangeStart, blockStart);
-                const oe = Math.min(rangeEnd, blockEnd);
-                
-                if (oe > os) {
-                    const img = await loadImageFromUrl(meta.block.url);
-                    
-                    const srcStartInResized = os - blockStart;
-                    const srcEndInResized = oe - blockStart;
-                    const srcY = Math.round(srcStartInResized / meta.scale);
-                    const srcH = Math.round((srcEndInResized - srcStartInResized) / meta.scale);
-                    const destH = oe - os;
-                    
-                    tileCtx.drawImage(
-                        img,
-                        0, srcY, meta.block.width, srcH,
-                        0, tileDestY, finalW, destH
-                    );
-                    
-                    tileDestY += destH;
-                }
-            }
-        }
-
-        const destTileY = tNetStart;
-        finalCtx.drawImage(tileCanvas, 0, destTileY);
-    }
-
-    return new Promise(r => finalCanvas.toBlob(r, 'image/jpeg', jpegQualityValue));
-}
-
-function netToAbsRange(segStartY, netStart, netEnd, cropRegions) {
-    const BIG = segStartY + 100000;
-    const freeRanges = subtractCropRegions(segStartY, BIG, cropRegions);
-
-    let cumNet = 0;
-    let absStart = segStartY + netStart;
-    let absEnd = segStartY + netEnd;
-    let foundStart = false;
-    let foundEnd = false;
-
-    for (const [fs, fe] of freeRanges) {
-        const rangeLen = fe - fs;
-        if (!foundStart) {
-            if (cumNet + rangeLen > netStart) {
-                absStart = fs + (netStart - cumNet);
-                foundStart = true;
-            }
-        }
-        if (!foundEnd) {
-            if (cumNet + rangeLen >= netEnd) {
-                absEnd = fs + (netEnd - cumNet);
-                foundEnd = true;
-            }
-        }
-        if (foundStart && foundEnd) break;
-        cumNet += rangeLen;
-    }
-
-    return { absStart, absEnd };
-}
-
-function subtractCropRegions(startY, endY, cropRegions) {
-    let ranges = [[startY, endY]];
-    cropRegions.forEach(r => {
-        const newRanges = [];
-        ranges.forEach(([s, e]) => {
-            const cs = Math.max(r.startY, s);
-            const ce = Math.min(r.endY, e);
-            if (ce <= cs) {
-                newRanges.push([s, e]);
-            } else {
-                if (s < cs) newRanges.push([s, cs]);
-                if (ce < e) newRanges.push([ce, e]);
-            }
-        });
-        ranges = newRanges;
-    });
-    return ranges;
-}
-
-function loadImageFromUrl(url) {
+// ==================== SMART AUTO-CUT LOGIC (TỪ MAIN.JS ĐƯỢC TỐI ƯU SIÊU NHẸ) ====================
+const imageElementCache = new Map();
+function getLoadedImage(url) {
+    if (imageElementCache.has(url)) return Promise.resolve(imageElementCache.get(url));
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve(img);
+        img.onload = () => { imageElementCache.set(url, img); resolve(img); };
         img.onerror = reject;
         img.src = url;
     });
 }
 
-// ==================== DOWNLOAD ALL JPG ====================
+/**
+ * Quét toàn bộ danh sách ảnh để tìm các dòng trắng/đen an toàn (Gutters)
+ */
+async function scanBlankGuttersAcrossImages(onProgress) {
+    const isWhite = rgb => (rgb[0] + rgb[1] + rgb[2]) >= 690; // R+G+B >= 690 (trắng)
+    const isBlack = rgb => (rgb[0] + rgb[1] + rgb[2]) < 75;   // R+G+B < 75 (đen)
+
+    const blankLinesGlobal = [];
+    let cumulativeHeight = 0;
+
+    // Canvas scan siêu nhẹ với bề rộng vừa đủ (Math.min(w, 500)) để tránh ngốn RAM
+    const scanCanvas = document.createElement('canvas');
+    const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+
+    for (let idx = 0; idx < imageBlocks.length; idx++) {
+        if (shouldStop) break;
+        const block = imageBlocks[idx];
+        if (onProgress) onProgress(idx + 1, imageBlocks.length);
+
+        const img = await getLoadedImage(block.url);
+        const scanWidth = Math.min(block.width, 500);
+        scanCanvas.width = scanWidth;
+        scanCanvas.height = block.height;
+        scanCtx.drawImage(img, 0, 0, scanWidth, block.height);
+
+        const imgData = scanCtx.getImageData(0, 0, scanWidth, block.height).data;
+
+        for (let y = 0; y < block.height; y++) {
+            // Quick sample 20 điểm
+            let whiteCount = 0, blackCount = 0;
+            const step = Math.floor(scanWidth / 20);
+            for (let k = 1; k < 20; k++) {
+                const pxIdx = (y * scanWidth + k * step) * 4;
+                const r = imgData[pxIdx], g = imgData[pxIdx + 1], b = imgData[pxIdx + 2];
+                if (isWhite([r, g, b])) whiteCount++;
+                else if (isBlack([r, g, b])) blackCount++;
+            }
+
+            const isCandidateWhite = (whiteCount === 19);
+            const isCandidateBlack = (blackCount === 19);
+
+            if (isCandidateWhite || isCandidateBlack) {
+                // Kiểm tra toàn diện dòng
+                let solid = true;
+                for (let x = 5; x < scanWidth - 5; x += 2) {
+                    const pxIdx = (y * scanWidth + x) * 4;
+                    const r = imgData[pxIdx], g = imgData[pxIdx + 1], b = imgData[pxIdx + 2];
+                    if (isCandidateWhite && !isWhite([r, g, b])) { solid = false; break; }
+                    if (isCandidateBlack && !isBlack([r, g, b])) { solid = false; break; }
+                }
+                if (solid) {
+                    blankLinesGlobal.push(cumulativeHeight + y);
+                }
+            }
+        }
+        cumulativeHeight += block.height;
+    }
+
+    return { blankLinesGlobal, totalHeight: cumulativeHeight };
+}
+
+/**
+ * Tính toán các vết cắt an toàn dựa vào các dải gutter và minHeight
+ */
+function calculateOptimalCutPoints(blankLines, totalHeight, minHeight) {
+    if (!blankLines || !blankLines.length) return [];
+
+    // Gom cụm các dòng liên tiếp
+    const clusters = [];
+    let start = blankLines[0];
+    let prev = blankLines[0];
+
+    for (let i = 1; i < blankLines.length; i++) {
+        const curr = blankLines[i];
+        if (curr - prev <= 4) {
+            prev = curr;
+        } else {
+            clusters.push(Math.round((start + prev) / 2));
+            start = curr;
+            prev = curr;
+        }
+    }
+    clusters.push(Math.round((start + prev) / 2));
+
+    // Lọc theo khoảng cách tối thiểu (minHeight)
+    const cutPoints = [0];
+    for (const mid of clusters) {
+        if (mid - cutPoints[cutPoints.length - 1] >= minHeight && (totalHeight - mid) >= 300) {
+            cutPoints.push(mid);
+        }
+    }
+    cutPoints.push(totalHeight);
+
+    return cutPoints;
+}
+
+/**
+ * TÍNH NĂNG 1: Tự động cắt & Tái tạo danh sách ảnh (Đúng chức năng của main.js)
+ */
+async function runAutoCutAndStitch() {
+    if (!imageBlocks.length || isProcessing) return;
+    const minHeight = parseInt(document.getElementById('minSliceHeightInput').value) || 1000;
+    if (minHeight <= 100) {
+        alert('Vui lòng nhập khung hình tối thiểu hợp lệ (> 100px)');
+        return;
+    }
+
+    isProcessing = true; shouldStop = false;
+    setButtonsDisabled(true);
+    showProgress(true, 'Đang quét khoảng trắng giữa các khung tranh...');
+
+    try {
+        // Bước 1: Quét gutter
+        const { blankLinesGlobal, totalHeight } = await scanBlankGuttersAcrossImages((c, t) => {
+            updateProgress((c / t) * 40, `Quét ảnh gốc ${c}/${t}...`);
+        });
+
+        if (shouldStop) throw new Error('Đã dừng');
+
+        updateProgress(50, 'Đang tính toán toạ độ cắt an toàn...');
+        await sleep(100);
+
+        const cutPoints = calculateOptimalCutPoints(blankLinesGlobal, totalHeight, minHeight);
+
+        if (cutPoints.length <= 2) {
+            showToast('⚠️ Không tìm thấy rãnh phân cách nào đủ dài theo cấu hình!', true);
+            showProgress(false); isProcessing = false; setButtonsDisabled(false);
+            return;
+        }
+
+        // Bước 2: Cắt & Ghép tạo thành danh sách ảnh mới
+        updateProgress(60, 'Đang tái cấu trúc và ghép ảnh...');
+
+        // Map tọa độ từng ảnh gốc
+        let cumY = 0;
+        const mappedOrig = imageBlocks.map(b => {
+            const start = cumY;
+            cumY += b.height;
+            return { block: b, start, end: cumY };
+        });
+
+        const newBlocks = [];
+        const numSlices = cutPoints.length - 1;
+
+        for (let i = 0; i < numSlices; i++) {
+            if (shouldStop) break;
+            const sliceStart = cutPoints[i];
+            const sliceEnd = cutPoints[i + 1];
+            const sliceHeight = sliceEnd - sliceStart;
+
+            updateProgress(60 + ((i + 1) / numSlices) * 35, `Ghép & Xuất đoạn ${i + 1}/${numSlices}...`);
+
+            // Tạo canvas cho đoạn cắt
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = targetWidthValue;
+            sliceCanvas.height = sliceHeight;
+            const sCtx = sliceCanvas.getContext('2d', { alpha: false });
+            sCtx.imageSmoothingEnabled = true;
+            sCtx.imageSmoothingQuality = 'high';
+
+            let drawDestY = 0;
+
+            for (const item of mappedOrig) {
+                const overlapStart = Math.max(sliceStart, item.start);
+                const overlapEnd = Math.min(sliceEnd, item.end);
+
+                if (overlapEnd > overlapStart) {
+                    const img = await getLoadedImage(item.block.url);
+                    const srcY = overlapStart - item.start;
+                    const srcH = overlapEnd - overlapStart;
+
+                    sCtx.drawImage(
+                        img,
+                        0, srcY, item.block.width, srcH,
+                        0, drawDestY, targetWidthValue, srcH
+                    );
+                    drawDestY += srcH;
+                }
+            }
+
+            const blob = await new Promise(r => sliceCanvas.toBlob(r, 'image/jpeg', jpegQualityValue));
+            const newName = `auto_${String(i + 1).padStart(4, '0')}.jpg`;
+
+            newBlocks.push({
+                id: Date.now() + i + Math.random(),
+                file: new File([blob], newName, { type: 'image/jpeg' }),
+                name: newName,
+                width: targetWidthValue,
+                height: sliceHeight,
+                url: URL.createObjectURL(blob),
+                cutPoints: [],
+                cropRegions: []
+            });
+        }
+
+        if (shouldStop) throw new Error('Đã dừng');
+
+        // Giải phóng URL cũ
+        imageBlocks.forEach(b => { if (b.url) URL.revokeObjectURL(b.url); });
+        imageElementCache.clear();
+
+        // Gán danh sách ảnh mới
+        imageBlocks = newBlocks;
+        rebuildMergeStates();
+        renderAll();
+
+        updateProgress(100, 'Hoàn thành!');
+        await sleep(200);
+        showToast(`✅ Đã tự động cắt ghép thành công ${imageBlocks.length} ảnh!`, false, 4000);
+    } catch (e) {
+        showToast(e.message === 'Đã dừng' ? '⏹️ Đã dừng' : '❌ Lỗi: ' + e.message, true);
+    } finally {
+        showProgress(false);
+        isProcessing = false;
+        setButtonsDisabled(false);
+    }
+}
+
+/**
+ * TÍNH NĂNG 2: Tự động đặt vết cắt & bật Ghép lên màn hình để người dùng xem trước và kéo chỉnh
+ */
+async function runAutoDetectCutLines() {
+    if (!imageBlocks.length || isProcessing) return;
+    const minHeight = parseInt(document.getElementById('minSliceHeightInput').value) || 1000;
+    isProcessing = true; shouldStop = false;
+    setButtonsDisabled(true);
+    showProgress(true, 'Đang quét khoảng trắng và rãnh an toàn...');
+
+    try {
+        const { blankLinesGlobal, totalHeight } = await scanBlankGuttersAcrossImages((c, t) => {
+            updateProgress((c / t) * 60, `Phân tích ảnh ${c}/${t}...`);
+        });
+
+        if (shouldStop) throw new Error('Đã dừng');
+
+        updateProgress(80, 'Cắm mốc cắt...');
+        const cutPoints = calculateOptimalCutPoints(blankLinesGlobal, totalHeight, minHeight);
+
+        // Bật Ghép tất cả
+        mergeStates.forEach(s => s.merged = true);
+
+        // Xóa vết cắt cũ và cắm vết cắt mới vào từng ảnh tương ứng
+        imageBlocks.forEach(b => b.cutPoints = []);
+
+        let cumY = 0;
+        imageBlocks.forEach((block, bIdx) => {
+            const start = cumY;
+            const end = cumY + block.height;
+
+            cutPoints.forEach(cp => {
+                if (cp > start && cp < end) {
+                    const localY = cp - start;
+                    block.cutPoints.push(localY);
+                }
+            });
+            block.cutPoints.sort((a, b) => a - b);
+            cumY = end;
+        });
+
+        renderAll();
+        showToast(`🎯 Đã cắm ${cutPoints.length - 2} đường cắt an toàn. Bạn có thể kéo chỉnh thêm!`, false, 4000);
+    } catch (e) {
+        showToast(e.message === 'Đã dừng' ? '⏹️ Đã dừng' : '❌ Lỗi: ' + e.message, true);
+    } finally {
+        showProgress(false);
+        isProcessing = false;
+        setButtonsDisabled(false);
+    }
+}
+
+// ==================== MANUAL EXPORT & SLICE LOGIC ====================
+function buildOutputSegments() {
+    if (!imageBlocks.length) return [];
+    const segments = [];
+    let i = 0;
+
+    while (i < imageBlocks.length) {
+        let groupEnd = i;
+        while (groupEnd < imageBlocks.length - 1 && mergeStates[groupEnd] && mergeStates[groupEnd].merged) {
+            groupEnd++;
+        }
+
+        const groupBlocks = imageBlocks.slice(i, groupEnd + 1);
+
+        let groupCumulativeHeight = 0;
+        const mappedBlocks = groupBlocks.map(block => {
+            const scaleToTarget = targetWidthValue / block.width;
+            const scaledHeight = Math.round(block.height * scaleToTarget);
+            const startY = groupCumulativeHeight;
+            groupCumulativeHeight += scaledHeight;
+            return {
+                block, scaleToTarget, startY, endY: groupCumulativeHeight, scaledHeight
+            };
+        });
+
+        const rawCutPoints = [0];
+        mappedBlocks.forEach(mb => {
+            mb.block.cutPoints.forEach(cp => {
+                const scaledCutY = mb.startY + Math.round(cp * mb.scaleToTarget);
+                if (scaledCutY > 0 && scaledCutY < groupCumulativeHeight) {
+                    rawCutPoints.push(scaledCutY);
+                }
+            });
+        });
+        rawCutPoints.push(groupCumulativeHeight);
+        rawCutPoints.sort((a, b) => a - b);
+
+        const cutPoints = [...new Set(rawCutPoints)];
+        const groupCrops = [];
+        mappedBlocks.forEach(mb => {
+            mb.block.cropRegions.forEach(cr => {
+                groupCrops.push({
+                    startY: mb.startY + Math.round(cr.startY * mb.scaleToTarget),
+                    endY: mb.startY + Math.round(cr.endY * mb.scaleToTarget)
+                });
+            });
+        });
+
+        for (let c = 0; c < cutPoints.length - 1; c++) {
+            let segStart = cutPoints[c];
+            let segEnd = cutPoints[c + 1];
+
+            let currStart = segStart;
+            while (currStart < segEnd) {
+                let nextEnd = Math.min(currStart + MAX_SAFE_SLICE_HEIGHT, segEnd);
+                const visibleRanges = subtractCropRanges(currStart, nextEnd, groupCrops);
+                const netHeight = visibleRanges.reduce((sum, r) => sum + (r.end - r.start), 0);
+
+                if (netHeight > 0) {
+                    segments.push({
+                        mappedBlocks, visibleRanges, targetWidth: targetWidthValue, netHeight
+                    });
+                }
+                currStart = nextEnd;
+            }
+        }
+        i = groupEnd + 1;
+    }
+
+    return segments;
+}
+
+function subtractCropRanges(start, end, cropRegions) {
+    let ranges = [{ start, end }];
+    cropRegions.forEach(cr => {
+        const nextRanges = [];
+        ranges.forEach(r => {
+            const overlapStart = Math.max(r.start, cr.startY);
+            const overlapEnd = Math.min(r.end, cr.endY);
+            if (overlapStart < overlapEnd) {
+                if (r.start < overlapStart) nextRanges.push({ start: r.start, end: overlapStart });
+                if (overlapEnd < r.end) nextRanges.push({ start: overlapEnd, end: r.end });
+            } else {
+                nextRanges.push(r);
+            }
+        });
+        ranges = nextRanges;
+    });
+    return ranges;
+}
+
+function updateStats() {
+    document.getElementById('statOriginal').textContent = imageBlocks.length;
+    let groups = 0, i = 0;
+    while (i < imageBlocks.length) {
+        groups++;
+        while (i < imageBlocks.length - 1 && mergeStates[i] && mergeStates[i].merged) i++;
+        i++;
+    }
+    document.getElementById('statMerged').textContent = groups;
+    document.getElementById('statCuts').textContent = imageBlocks.reduce((s, b) => s + b.cutPoints.length, 0);
+    document.getElementById('statOutput').textContent = imageBlocks.length ? buildOutputSegments().length : 0;
+}
+
+async function renderSegmentToBlob(segment) {
+    const { mappedBlocks, visibleRanges, targetWidth, netHeight } = segment;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = netHeight;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    let currentDrawY = 0;
+
+    for (const vr of visibleRanges) {
+        let spanStart = vr.start;
+        let spanEnd = vr.end;
+
+        for (const mb of mappedBlocks) {
+            const overlapStart = Math.max(spanStart, mb.startY);
+            const overlapEnd = Math.min(spanEnd, mb.endY);
+
+            if (overlapEnd > overlapStart) {
+                const img = await getLoadedImage(mb.block.url);
+                const srcY = Math.round((overlapStart - mb.startY) / mb.scaleToTarget);
+                const srcH = Math.round((overlapEnd - overlapStart) / mb.scaleToTarget);
+                const destH = overlapEnd - overlapStart;
+
+                ctx.drawImage(
+                    img,
+                    0, srcY, mb.block.width, srcH,
+                    0, currentDrawY, targetWidth, destH
+                );
+                currentDrawY += destH;
+            }
+        }
+    }
+
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', jpegQualityValue));
+}
+
+function buildFilename(prefix, index, randomID, ext = 'jpg') {
+    const cleanPrefix = (prefix || 'cut').trim().replace(/_+$/, '');
+    const num = String(index + 1).padStart(4, '0');
+    const useRandom = document.getElementById('useRandomId').checked;
+    return useRandom && randomID ? `${cleanPrefix}_${randomID}_${num}.${ext}` : `${cleanPrefix}_${num}.${ext}`;
+}
+
+// ==================== EXPORT HANDLERS ====================
 async function downloadAllJPG() {
     if (!imageBlocks.length || isProcessing) return;
-    isProcessing = true;
-    shouldStop = false;
+    isProcessing = true; shouldStop = false;
     setButtonsDisabled(true);
-    showProgress(true, 'Đang phân tích...');
+    showProgress(true, 'Chuẩn bị cắt ảnh...');
 
     const segments = buildOutputSegments();
     const prefix = document.getElementById('outputPrefix').value || 'cut';
     const randomID = currentRandomID;
-    
-    console.log(`📦 Session ID: ${randomID}`);
-    updateProgress(0, `Chuẩn bị ${segments.length} ảnh...`);
 
-    let processedCount = 0;
-    const downloadQueue = new DownloadQueue(2, 600);
-
-    const processOne = async (seg, idx) => {
+    for (let i = 0; i < segments.length; i++) {
+        if (shouldStop) break;
+        updateProgress((i / segments.length) * 100, `Đang xử lý ${i + 1}/${segments.length}...`);
         try {
-            const blob = await processSegment(seg);
-            if (!blob) {
-                processedCount++;
-                return false;
+            const blob = await renderSegmentToBlob(segments[i]);
+            if (blob) {
+                const filename = buildFilename(prefix, i, randomID, 'jpg');
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 20000);
+                await sleep(350);
             }
-            processedCount++;
-            
-            const filename = buildFilename(prefix, idx, randomID);
-            downloadQueue.add({ blob, filename, idx });
-            
-            updateProgress(
-                (processedCount / segments.length) * 100,
-                `Xử lý: ${processedCount}/${segments.length} | Tải: ${downloadQueue.getDownloadedCount()}/${segments.length}`
-            );
-            
-            return true;
         } catch (err) {
-            console.error(`❌ Segment ${idx} failed:`, err);
-            showToast(`Lỗi ảnh ${idx + 1}: ${err.message}`, true, 3000);
-            processedCount++;
-            return false;
+            console.error('Lỗi đoạn', i, err);
         }
-    };
-
-    if (isIOS) {
-        for (let i = 0; i < segments.length; i++) {
-            if (shouldStop) break;
-            await processOne(segments[i], i);
-            if (i % 3 === 0) await sleep(100);
-        }
-    } else {
-        const THREADS = Math.min(4, Math.max(2, segments.length));
-        const queue = segments.map((seg, idx) => ({ seg, idx }));
-        
-        const worker = async () => {
-            while (queue.length && !shouldStop) {
-                const task = queue.shift();
-                if (!task) break;
-                await processOne(task.seg, task.idx);
-            }
-        };
-        
-        await Promise.all(Array(THREADS).fill(null).map(() => worker()));
-    }
-
-    while (downloadQueue.downloading && !shouldStop) {
-        await sleep(200);
     }
 
     showProgress(false);
-
-    const downloaded = downloadQueue.getDownloadedCount();
-    
-    if (shouldStop) {
-        showToast(`⏹️ Đã dừng! Đã tải: ${downloaded}/${segments.length}`, true);
-    } else {
-        const useRandom = document.getElementById('useRandomId').checked;
-        const msg = useRandom 
-            ? `✅ Hoàn thành! ${downloaded} ảnh • ID: ${randomID}`
-            : `✅ Hoàn thành! ${downloaded} ảnh`;
-        showToast(msg, false, 5000);
-    }
-
     isProcessing = false;
-    shouldStop = false;
     setButtonsDisabled(false);
+    showToast(shouldStop ? '⏹️ Đã dừng thao tác' : '✅ Tải toàn bộ ảnh thành công!');
 }
 
-// ==================== DOWNLOAD ZIP ====================
 async function downloadZIP() {
     if (!imageBlocks.length || isProcessing) return;
-    isProcessing = true;
-    shouldStop = false;
+    isProcessing = true; shouldStop = false;
     setButtonsDisabled(true);
-    showProgress(true, 'Đang tạo ảnh...');
+    showProgress(true, 'Đang cắt & gói file ZIP...');
 
     const segments = buildOutputSegments();
     const prefix = document.getElementById('outputPrefix').value || 'cut';
     const randomID = currentRandomID;
-    const zip = new JSZip();
+    const uZip = new UniversalZip();
 
-    const { results, completed, failed } = await processAllSegments(segments);
+    for (let i = 0; i < segments.length; i++) {
+        if (shouldStop) break;
+        updateProgress(((i + 1) / (segments.length + 1)) * 100, `Xử lý đoạn ${i + 1}/${segments.length}...`);
+        try {
+            const blob = await renderSegmentToBlob(segments[i]);
+            if (blob) {
+                const filename = buildFilename(prefix, i, randomID, 'jpg');
+                await uZip.addFile(filename, blob, { compress: false });
+            }
+        } catch (err) {
+            console.error('Lỗi segment', i, err);
+        }
+    }
 
     if (shouldStop) {
-        showProgress(false);
-        showToast(`⏹️ Đã dừng! Xử lý: ${completed}/${segments.length}`, true);
-        isProcessing = false;
-        shouldStop = false;
-        setButtonsDisabled(false);
+        showProgress(false); isProcessing = false; setButtonsDisabled(false);
+        showToast('⏹️ Đã dừng tạo ZIP', true);
         return;
     }
 
-    results.forEach((blob, i) => {
-        if (blob) zip.file(buildFilename(prefix, i, randomID), blob);
-    });
-
-    updateProgress(0, 'Đang nén ZIP...');
-    const zipBlob = await zip.generateAsync(
-        { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
-        meta => updateProgress(meta.percent, `Nén ZIP: ${Math.round(meta.percent)}%`)
-    );
+    updateProgress(98, 'Đang xuất ZIP...');
+    await sleep(200);
 
     const useRandom = document.getElementById('useRandomId').checked;
-    const zipFilename = useRandom ? `${prefix}_${randomID}.zip` : `${prefix}.zip`;
-    await downloadBlobSafely(zipBlob, zipFilename);
+    const zipName = useRandom ? `${prefix}_${randomID}.zip` : `${prefix}.zip`;
+    uZip.download(zipName);
 
     showProgress(false);
-    const msg = useRandom 
-        ? `✅ ZIP: ${completed} ảnh • ID: ${randomID}`
-        : `✅ ZIP: ${completed} ảnh`;
-    showToast(msg, false, 5000);
     isProcessing = false;
-    shouldStop = false;
     setButtonsDisabled(false);
+    showToast(`✅ Đã tải file: ${zipName}`);
 }
 
-// ==================== DOWNLOAD PDF ====================
 async function downloadPDF() {
     if (!imageBlocks.length || isProcessing) return;
-    isProcessing = true;
-    shouldStop = false;
+    isProcessing = true; shouldStop = false;
     setButtonsDisabled(true);
-    showProgress(true, 'Đang tạo ảnh...');
+    showProgress(true, 'Đang tạo PDF...');
 
     const segments = buildOutputSegments();
     const prefix = document.getElementById('outputPrefix').value || 'cut';
     const randomID = currentRandomID;
 
-    const { results, completed, failed } = await processAllSegments(segments);
+    try {
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.create();
 
-    if (shouldStop) {
-        showProgress(false);
-        showToast(`⏹️ Đã dừng! Xử lý: ${completed}/${segments.length}`, true);
-        isProcessing = false;
-        shouldStop = false;
-        setButtonsDisabled(false);
-        return;
-    }
-
-    updateProgress(0, 'Đang tạo PDF...');
-    const { PDFDocument } = PDFLib;
-    const pdfDoc = await PDFDocument.create();
-
-    for (let i = 0; i < results.length; i++) {
-        if (!results[i]) continue;
-        try {
-            const ab = await results[i].arrayBuffer();
-            const img = await pdfDoc.embedJpg(ab);
-            const page = pdfDoc.addPage([img.width, img.height]);
-            page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
-            updateProgress((i + 1) / results.length * 100, `PDF: ${i + 1}/${results.length}`);
-        } catch (err) {
-            console.error('PDF embed error', i, err);
-        }
-    }
-
-    updateProgress(99, 'Đang lưu PDF...');
-    const pdfBytes = await pdfDoc.save();
-    const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
-    
-    const useRandom = document.getElementById('useRandomId').checked;
-    const pdfFilename = useRandom ? `${prefix}_${randomID}.pdf` : `${prefix}.pdf`;
-    await downloadBlobSafely(pdfBlob, pdfFilename);
-
-    showProgress(false);
-    const msg = useRandom 
-        ? `✅ PDF: ${completed} trang • ID: ${randomID}`
-        : `✅ PDF: ${completed} trang`;
-    showToast(msg, false, 5000);
-    isProcessing = false;
-    shouldStop = false;
-    setButtonsDisabled(false);
-}
-
-async function processAllSegments(segments) {
-    const results = new Array(segments.length).fill(null);
-    let completed = 0, failed = 0;
-
-    if (isIOS) {
         for (let i = 0; i < segments.length; i++) {
             if (shouldStop) break;
-            try {
-                results[i] = await processSegment(segments[i]);
-                if (results[i]) completed++;
-                else failed++;
-            } catch (err) {
-                console.error('Segment', i, err);
-                showToast(err.message, true, 5000);
-                failed++;
+            updateProgress((i / segments.length) * 100, `Đang nhúng trang ${i + 1}/${segments.length}...`);
+            const blob = await renderSegmentToBlob(segments[i]);
+            if (blob) {
+                const ab = await blob.arrayBuffer();
+                const img = await pdfDoc.embedJpg(ab);
+                const page = pdfDoc.addPage([img.width, img.height]);
+                page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
             }
-            updateProgress((completed + failed) / segments.length * 100, `${completed}/${segments.length} (lỗi: ${failed})`);
         }
-    } else {
-        const queue = segments.map((seg, idx) => ({ seg, idx }));
-        const THREADS = Math.min(4, segments.length);
-        const worker = async () => {
-            while (queue.length && !shouldStop) {
-                const task = queue.shift();
-                if (!task) break;
-                try {
-                    results[task.idx] = await processSegment(task.seg);
-                    if (results[task.idx]) completed++;
-                    else failed++;
-                } catch (err) {
-                    console.error('Segment', task.idx, err);
-                    showToast(err.message, true, 5000);
-                    failed++;
-                }
-                updateProgress((completed + failed) / segments.length * 100, `${completed}/${segments.length} (lỗi: ${failed})`);
-            }
-        };
-        await Promise.all(Array(THREADS).fill(null).map(() => worker()));
+
+        if (shouldStop) throw new Error('Đã hủy');
+
+        updateProgress(98, 'Đang lưu file PDF...');
+        const pdfBytes = await pdfDoc.save();
+        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const useRandom = document.getElementById('useRandomId').checked;
+        const pdfName = useRandom ? `${prefix}_${randomID}.pdf` : `${prefix}.pdf`;
+
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url; a.download = pdfName;
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 20000);
+
+        showToast(`✅ Xuất PDF thành công: ${pdfName}`);
+    } catch (e) {
+        showToast(e.message === 'Đã hủy' ? '⏹️ Đã dừng' : '❌ Lỗi PDF: ' + e.message, true);
     }
 
-    return { results, completed, failed };
+    showProgress(false);
+    isProcessing = false;
+    setButtonsDisabled(false);
 }
 
 function setButtonsDisabled(disabled) {
-    ['downloadAllBtn','downloadZipBtn','downloadPdfBtn'].forEach(id => {
-        document.getElementById(id).disabled = disabled;
+    ['downloadAllBtn', 'downloadZipBtn', 'downloadPdfBtn'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = disabled;
     });
     document.getElementById('stopBtn').style.display = disabled ? 'block' : 'none';
 }
@@ -1823,142 +1607,134 @@ function stopProcess() {
     document.getElementById('stopBtn').disabled = true;
 }
 
-// ==================== ZOOM ====================
-function setupZoomControls() {
-    const area = document.getElementById('canvasArea');
-    if (!isMobile) {
-        area.addEventListener('wheel', e => {
-            if (e.ctrlKey) { e.preventDefault(); e.deltaY < 0 ? zoomIn() : zoomOut(); }
-        }, { passive: false });
-    }
-
-    let initDist = 0, initZoom = 1;
-    area.addEventListener('touchstart', e => {
-        if (e.touches.length === 2) { initDist = getDist(e.touches[0], e.touches[1]); initZoom = currentZoom; }
-    });
-    area.addEventListener('touchmove', e => {
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            const d = getDist(e.touches[0], e.touches[1]);
-            currentZoom = Math.min(5, Math.max(0.3, initZoom * d / initDist));
-            applyZoom();
-        }
-    }, { passive: false });
-}
-
-function getDist(t1, t2) { return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY); }
-function zoomIn()    { currentZoom = Math.min(5, currentZoom * 1.2); applyZoom(); }
-function zoomOut()   { currentZoom = Math.max(0.3, currentZoom / 1.2); applyZoom(); }
-function resetZoom() { currentZoom = 1.0; applyZoom(); }
-function applyZoom() {
-    document.getElementById('canvasViewport').style.transform = `scale(${currentZoom})`;
-    document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
-}
-
-// ==================== CONFIG ====================
+// ==================== CONFIG IMPORT / EXPORT (ĐÃ FIX LỖI) ====================
 function exportConfig() {
     const config = {
         version: 24,
         targetWidth: targetWidthValue,
         originalImageWidth,
         jpegQuality: jpegQualityValue,
-        outputPrefix: document.getElementById('outputPrefix').value,
+        minSliceHeight: parseInt(document.getElementById('minSliceHeightInput').value) || 1000,
+        outputPrefix: document.getElementById('outputPrefix').value || 'cut',
         randomID: currentRandomID,
         useRandomId: document.getElementById('useRandomId').checked,
         blocks: imageBlocks.map(b => ({
-            name: b.name, 
-            width: b.width, 
+            name: b.name,
+            width: b.width,
             height: b.height,
-            cutPoints: b.cutPoints, 
-            cropRegions: b.cropRegions
+            cutPoints: [...b.cutPoints],
+            cropRegions: b.cropRegions.map(r => ({ startY: r.startY, endY: r.endY }))
         })),
         mergeStates: mergeStates.map(m => ({ index: m.index, merged: m.merged }))
     };
+
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; 
-    a.download = 'webtoon_config.json'; 
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('✅ Đã xuất config');
+    a.href = url; a.download = `webtoon_config_${currentRandomID || 'save'}.json`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 5000);
+    showToast('✅ Đã lưu cấu hình ra file JSON');
 }
 
-function importConfig() { 
-    document.getElementById('configInput').click(); 
+function importConfig() {
+    document.getElementById('configInput').click();
 }
 
 document.getElementById('configInput').addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     try {
-        const cfg = JSON.parse(await file.text());
-        
-        // Load basic settings
-        targetWidthValue = cfg.targetWidth || 1440;
-        document.getElementById('targetWidth').value = targetWidthValue;
-        document.getElementById('targetWidthInput').value = targetWidthValue;
-        document.getElementById('outputPrefix').value = cfg.outputPrefix || 'cut';
-        
-        if (cfg.randomID) {
-            currentRandomID = cfg.randomID;
-            document.getElementById('randomIdDisplay').textContent = currentRandomID;
+        const text = await file.text();
+        const cfg = JSON.parse(text);
+
+        if (imageBlocks.length === 0) {
+            pendingConfig = cfg;
+            showToast('📂 Đã nhận file config! Hãy nạp ảnh lên để áp dụng.', false, 5000);
+        } else {
+            applyConfigObject(cfg);
+            showToast('✅ Đã áp dụng cấu hình thành công!');
         }
-        
-        if (cfg.useRandomId !== undefined) {
-            document.getElementById('useRandomId').checked = cfg.useRandomId;
-        }
-        
-        if (cfg.originalImageWidth) {
-            originalImageWidth = cfg.originalImageWidth;
-            document.getElementById('originalWidthLabel').textContent = originalImageWidth;
-        }
-        
-        // Load blocks data (cutPoints, cropRegions)
-        if (cfg.blocks && cfg.blocks.length === imageBlocks.length) {
-            cfg.blocks.forEach((cfgBlock, idx) => {
-                if (imageBlocks[idx] && imageBlocks[idx].name === cfgBlock.name) {
-                    imageBlocks[idx].cutPoints = cfgBlock.cutPoints || [];
-                    imageBlocks[idx].cropRegions = cfgBlock.cropRegions || [];
-                }
-            });
-        }
-        
-        // Load merge states
-        if (cfg.mergeStates) {
-            cfg.mergeStates.forEach((state, idx) => {
-                if (mergeStates[idx]) {
-                    mergeStates[idx].merged = state.merged;
-                }
-            });
-        }
-        
-        renderAll();
-        updateStats();
-        showToast('✅ Đã import config');
-        
-    } catch (err) { 
-        console.error('Config load error:', err);
-        showToast('❌ Lỗi đọc config: ' + err.message, true);
+    } catch (err) {
+        showToast('❌ Lỗi định dạng JSON: ' + err.message, true);
     }
-    
     e.target.value = '';
 });
+
+function applyConfigObject(cfg) {
+    if (!cfg) return;
+
+    if (cfg.targetWidth) {
+        targetWidthValue = cfg.targetWidth;
+        document.getElementById('targetWidth').value = targetWidthValue;
+        document.getElementById('targetWidthInput').value = targetWidthValue;
+    }
+    if (cfg.originalImageWidth) {
+        originalImageWidth = cfg.originalImageWidth;
+        document.getElementById('originalWidthLabel').textContent = originalImageWidth;
+    }
+    if (cfg.minSliceHeight) {
+        document.getElementById('minSliceHeightInput').value = cfg.minSliceHeight;
+    }
+    if (cfg.outputPrefix) {
+        document.getElementById('outputPrefix').value = cfg.outputPrefix;
+    }
+    if (cfg.randomID) {
+        currentRandomID = cfg.randomID;
+        document.getElementById('randomIdDisplay').textContent = currentRandomID;
+    }
+    if (typeof cfg.useRandomId === 'boolean') {
+        document.getElementById('useRandomId').checked = cfg.useRandomId;
+    }
+
+    if (Array.isArray(cfg.blocks) && imageBlocks.length > 0) {
+        const matchedIndices = new Set();
+
+        cfg.blocks.forEach((cfgBlock, cIdx) => {
+            // Bước 1: Khớp chính xác tên
+            let targetIdx = imageBlocks.findIndex((b, idx) => !matchedIndices.has(idx) && b.name === cfgBlock.name);
+
+            // Bước 2: Khớp theo kích thước nếu tên bị đổi
+            if (targetIdx === -1 && cfgBlock.width && cfgBlock.height) {
+                targetIdx = imageBlocks.findIndex((b, idx) => !matchedIndices.has(idx) && b.width === cfgBlock.width && b.height === cfgBlock.height);
+            }
+
+            // Bước 3: Khớp theo thứ tự (Index)
+            if (targetIdx === -1 && imageBlocks[cIdx] && !matchedIndices.has(cIdx)) {
+                targetIdx = cIdx;
+            }
+
+            if (targetIdx !== -1) {
+                matchedIndices.add(targetIdx);
+                const b = imageBlocks[targetIdx];
+                b.cutPoints = Array.isArray(cfgBlock.cutPoints) ? [...cfgBlock.cutPoints] : [];
+                b.cropRegions = Array.isArray(cfgBlock.cropRegions) ? cfgBlock.cropRegions.map(r => ({ startY: r.startY, endY: r.endY })) : [];
+            }
+        });
+    }
+
+    if (Array.isArray(cfg.mergeStates)) {
+        cfg.mergeStates.forEach((ms, idx) => {
+            if (mergeStates[idx]) mergeStates[idx].merged = !!ms.merged;
+        });
+    }
+
+    renderAll();
+}
 
 // ==================== UTILS ====================
 function setupRangeInputs() {
     const slider = document.getElementById('targetWidth');
     const input = document.getElementById('targetWidthInput');
     slider.addEventListener('input', e => {
-        targetWidthValue = parseInt(e.target.value);
+        targetWidthValue = parseInt(e.target.value) || 1440;
         input.value = targetWidthValue;
         updateStats();
     });
     const sync = e => {
-        let v = parseInt(e.target.value);
-        if (isNaN(v) || v < 720) v = 720;
-        if (v > 10000) v = 10000;
+        let v = parseInt(e.target.value) || 1440;
+        v = Math.max(500, Math.min(6000, v));
         targetWidthValue = v;
         slider.value = v;
         input.value = v;
@@ -1968,10 +1744,29 @@ function setupRangeInputs() {
     input.addEventListener('blur', sync);
 }
 
+function setupZoomControls() {
+    const area = document.getElementById('canvasArea');
+    area.addEventListener('wheel', e => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            e.deltaY < 0 ? zoomIn() : zoomOut();
+        }
+    }, { passive: false });
+}
+
+function zoomIn() { currentZoom = Math.min(3, currentZoom * 1.2); applyZoom(); }
+function zoomOut() { currentZoom = Math.max(0.3, currentZoom / 1.2); applyZoom(); }
+function resetZoom() { currentZoom = 1.0; applyZoom(); }
+function applyZoom() {
+    document.getElementById('canvasViewport').style.transform = `scale(${currentZoom})`;
+    document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+}
+
 function clearAll() {
-    if (!confirm('Xóa tất cả ảnh?')) return;
+    if (!confirm('Xác nhận xóa toàn bộ ảnh hiện tại?')) return;
     imageBlocks.forEach(b => { if (b.url) URL.revokeObjectURL(b.url); });
-    imageBlocks = []; 
+    imageElementCache.clear();
+    imageBlocks = [];
     mergeStates = [];
     originalImageWidth = null;
     document.getElementById('originalWidthLabel').textContent = '--';
@@ -1983,17 +1778,13 @@ function showProgress(show, text = '') {
     document.getElementById('progressOverlay').classList.toggle('visible', show);
     if (text) document.getElementById('progressText').textContent = text;
 }
-
 function updateProgress(pct, text) {
     const fill = document.getElementById('progressFill');
-    fill.style.width = pct + '%';
+    fill.style.width = Math.round(pct) + '%';
     fill.textContent = Math.round(pct) + '%';
-    document.getElementById('progressText').textContent = text;
+    if (text) document.getElementById('progressText').textContent = text;
 }
-
-function sleep(ms) { 
-    return new Promise(r => setTimeout(r, ms)); 
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
