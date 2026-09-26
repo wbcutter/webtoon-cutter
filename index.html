@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>WEBTOON CUT</title>
-    <!-- THƯ VIỆN ĐỌC / MỞ FILE ZIP -->
+    <!-- THƯ VIỆN MỞ ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- THƯ VIỆN NÉN ZIP SIÊU TỐC ĐẶC CHẾ (ZIPLIB.JS) -->
     <script src="https://cdn.jsdelivr.net/gh/wbcutter/gada@main/ziplib.js"></script>
@@ -30,7 +30,7 @@
         }
         @media (max-width: 768px) { .menu-toggle { display: block; } }
         
-        .main-container { display: flex; height: calc(100vh - 50px); position: relative; }
+        .main-container { display: flex; height: calc(100vh - 50px); height: calc(100dvh - 50px); position: relative; }
         .sidebar {
             width: 100%; max-width: 330px; background: #111; border-right: 2px solid #222;
             overflow-y: auto; overflow-x: hidden; padding: 14px; transition: transform 0.3s;
@@ -89,7 +89,7 @@
         }
         .mode-btn.active { background: #00d4ff; border-color: #00d4ff; color: #000; }
 
-        /* VIEWPORT SÁT THANH CÔNG CỤ */
+        /* VIEWPORT VÙNG XEM SÁT THANH CÔNG CỤ */
         .canvas-area {
             flex: 1; overflow: auto; background: #0a0a0a; position: relative;
             padding: 15px 25px;
@@ -103,7 +103,7 @@
             margin: 0; display: block;
         }
         
-        /* EMPTY STATE ĐỘC LẬP HOÀN TOÀN KHÔNG BỊ SCALED */
+        /* EMPTY STATE ĐỘC LẬP HOÀN TOÀN KHÔNG BỊ CO NHỎ */
         .empty-state-layer {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             display: flex; flex-direction: column; align-items: center;
@@ -281,7 +281,7 @@
         }
         .progress-text { text-align: center; color: #aaa; font-size: 11px; }
 
-        /* TÊN ẢNH ĐƯỢC PHÓNG TO RÕ RÀNG */
+        /* TÊN ẢNH PHÓNG TO RÕ RÀNG */
         .image-info-tooltip {
             position: absolute; top: 8px; right: 8px; background: rgba(10, 10, 10, 0.95);
             color: #00d4ff; padding: 6px 12px; border-radius: 6px; font-size: 14px;
@@ -432,10 +432,9 @@
                 <button class="btn btn-danger" onclick="confirmClearAllCuts()" style="margin-top:6px;">✂️ Xóa Tất Cả Vết Cắt</button>
             </div>
 
-            <!-- XUẤT FILE -->
+            <!-- XUẤT FILE CHUẨN GỌN GÀNG -->
             <div class="section">
                 <h3>💾 Xuất File</h3>
-                <!-- NÚT TẢI CHUẨN GỌN GÀNG THEO YÊU CẦU -->
                 <button class="btn btn-success" onclick="downloadZIP()" id="downloadZipBtn" style="margin-bottom:6px;">📦 Tải File ZIP</button>
                 <button class="btn btn-primary" onclick="downloadAllJPG()" id="downloadAllBtn" style="margin-bottom:6px;">💾 Tải từng ảnh rời</button>
                 <button class="btn btn-purple" onclick="downloadPDF()" id="downloadPdfBtn">📄 Xuất File PDF</button>
@@ -504,7 +503,6 @@ class StreamSafeZip {
             dosTime: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)
         };
     }
-    // Tính CRC32 từng mẩu nhỏ 2MB để không bao giờ giữ 100MB trong RAM heap
     static async computeBlobCrc32(blob) {
         let crc = -1;
         const chunkSize = 2 * 1024 * 1024;
@@ -557,7 +555,6 @@ class StreamSafeZip {
             lv.setUint16(28, 0, true);
             local.set(entry.nameBytes, 30);
 
-            // Truyền trực tiếp con trỏ Blob vào parts -> V8 không tốn 1 byte heap nào!
             parts.push(local, entry.blob);
 
             const central = new Uint8Array(46 + entry.nameBytes.length);
@@ -609,7 +606,6 @@ class StreamSafeZip {
     }
 }
 
-// Khởi tạo ưu tiên ziplib.js từ CDN, nếu offline dùng StreamSafeZip siêu chống tràn
 function createUniversalZipInstance() {
     if (typeof window.UniversalZip !== 'undefined') {
         try { return new window.UniversalZip(); } catch (e) {}
@@ -640,7 +636,15 @@ let seamPoints = [];
 let seamSelectedColor = '#ffffff';
 let isEyedropperActive = false;
 
+// ĐIỀU CHỈNH GIỚI HẠN AN TOÀN THEO THIẾT BỊ (FIX BUG #003)
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 function getMaxSafeHeightForWidth(w) {
+    if (IS_IOS) {
+        if (w <= 800) return 12000;
+        if (w <= 1000) return 10000;
+        return 8000;
+    }
     if (w <= 1080) return 22000;
     if (w <= 1280) return 20000;
     if (w <= 1600) return 16000;
@@ -683,6 +687,27 @@ function closeSidebar() {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebarOverlay').classList.remove('visible');
     }
+}
+
+// ==================== QUẢN LÝ TASK AN TOÀN (FIX BUG #004) ====================
+function beginTask(progressText = 'Đang xử lý...') {
+    shouldStop = false;
+    isProcessing = true;
+    setButtonsDisabled(true);
+    document.getElementById('stopBtn').disabled = false;
+    showProgress(true, progressText);
+}
+
+function endTask() {
+    isProcessing = false;
+    shouldStop = false;
+    setButtonsDisabled(false);
+    showProgress(false);
+}
+
+function stopProcess() { 
+    shouldStop = true; 
+    document.getElementById('stopBtn').disabled = true; 
 }
 
 // ==================== ZOOM ====================
@@ -766,7 +791,6 @@ async function handleFilesUpload(files) {
         showToast('⚠️ Không có ảnh hợp lệ', true);
         return;
     }
-    // Sắp xếp tự nhiên chuẩn xác 1, 2, 10...
     validFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
     let maxW = originalImageWidth || 0;
@@ -785,7 +809,7 @@ async function handleFilesUpload(files) {
                 cutPoints: [],
                 forcedCuts: new Set(),
                 cropRegions: [],
-                history: []
+                lastBackup: null // Chỉ lưu 1 phiên gần nhất để bảo toàn bộ nhớ
             });
         } catch (err) {
             console.error('Lỗi load:', validFiles[i].name, err);
@@ -961,15 +985,24 @@ function calculateBalancedCutPoints(blankLines, totalHeight, minHeight, maxSafeH
     return finalCuts;
 }
 
-// ==================== AUTO CUT RUNNERS ====================
+// ==================== AUTO CUT RUNNERS (FIX LOGIC KHI NẠP ẢNH ĐÃ CẮT SẴN) ====================
 async function runAutoDetectCutLines(executeStitch = false) {
     if (!imageBlocks.length || isProcessing) return;
     const minHeight = parseInt(document.getElementById('minSliceHeightInput').value) || 1200;
     const maxSafeHeight = getMaxSafeHeightForWidth(targetWidthValue);
 
-    isProcessing = true; shouldStop = false;
-    setButtonsDisabled(true);
-    showProgress(true, 'Đang quét toạ độ tâm rãnh an toàn (≥35px)...');
+    // Kiểm tra xem bộ ảnh nạp vào có phải toàn bộ đã là ảnh ngắn (đã cắt sẵn) hay không
+    const allPreCut = imageBlocks.every(b => {
+        const scaledH = Math.round(b.height * (targetWidthValue / b.width));
+        return scaledH <= minHeight * 1.25;
+    });
+
+    if (allPreCut && !executeStitch) {
+        showToast('ℹ️ Bộ ảnh này đã đạt chuẩn độ dài khung hình, không cần cắm thêm vết cắt!', false, 4000);
+        return;
+    }
+
+    beginTask('Đang quét toạ độ rãnh an toàn (≥35px)...');
 
     try {
         const { blankLinesGlobal, totalScaledHeight } = await scanSafeGuttersSynchronized((cur, tot) => {
@@ -986,12 +1019,12 @@ async function runAutoDetectCutLines(executeStitch = false) {
         if (executeStitch) {
             await executeAutoStitch(cutPointsWithMeta);
         } else {
-            mergeStates.forEach(s => s.merged = true);
+            // FIX LỖI: CHỈ BẬT MERGE Ở NHỮNG ẢNH CẦN GHÉP NỐI, KHÔNG MERGE ALL MÙ QUÁNG
             imageBlocks.forEach(b => { b.cutPoints = []; b.forcedCuts = new Set(); });
 
             let cumScaledY = 0;
             let placedCount = 0;
-            imageBlocks.forEach((block) => {
+            imageBlocks.forEach((block, bIdx) => {
                 const scale = targetWidthValue / block.width;
                 const scaledH = Math.round(block.height * scale);
                 const start = cumScaledY;
@@ -1007,6 +1040,11 @@ async function runAutoDetectCutLines(executeStitch = false) {
                     }
                 });
                 block.cutPoints.sort((a, b) => a - b);
+
+                // Nếu ảnh có chiều cao lớn hoặc đang nối dở mới merge
+                if (bIdx < mergeStates.length) {
+                    mergeStates[bIdx].merged = !allPreCut; 
+                }
                 cumScaledY = end;
             });
 
@@ -1016,9 +1054,7 @@ async function runAutoDetectCutLines(executeStitch = false) {
     } catch (e) {
         showToast(e.message === 'Đã dừng' ? '⏹️ Đã dừng' : '❌ Lỗi: ' + e.message, true);
     } finally {
-        showProgress(false);
-        isProcessing = false;
-        setButtonsDisabled(false);
+        endTask();
     }
 }
 
@@ -1051,7 +1087,7 @@ async function executeAutoStitch(cutPointsWithMeta) {
         sliceCanvas.height = sliceHeight;
         const sCtx = sliceCanvas.getContext('2d', { alpha: false });
         
-        // TRÁNH VIỀN ĐEN
+        // TRÁNH VIỀN ĐEN: Tráng sẵn màu nền trắng
         sCtx.fillStyle = '#ffffff';
         sCtx.fillRect(0, 0, targetWidthValue, sliceHeight);
         sCtx.imageSmoothingEnabled = true;
@@ -1079,7 +1115,9 @@ async function executeAutoStitch(cutPointsWithMeta) {
         }
 
         const ext = format === 'image/png' ? 'png' : 'jpg';
-        const blob = await new Promise(r => sliceCanvas.toBlob(r, format, 1.0));
+        const blob = await new Promise((resolve, reject) => {
+            sliceCanvas.toBlob(b => b ? resolve(b) : reject(new Error('Trình duyệt từ chối tạo blob')), format, 1.0);
+        });
         sliceCanvas.width = 0; sliceCanvas.height = 0;
 
         const newName = `slice_${String(i + 1).padStart(4, '0')}.${ext}`;
@@ -1093,7 +1131,7 @@ async function executeAutoStitch(cutPointsWithMeta) {
             cutPoints: [],
             forcedCuts: new Set(),
             cropRegions: [],
-            history: []
+            lastBackup: null
         });
     }
 
@@ -1119,9 +1157,7 @@ async function applyCurrentCutsAndRender() {
 
     if (!confirm(`Bạn có muốn Render & Cắt gộp thành ${segments.length} ảnh độc lập ngay trên màn hình để kiểm tra không?`)) return;
 
-    isProcessing = true; shouldStop = false;
-    setButtonsDisabled(true);
-    showProgress(true, 'Đang Render & Cắt ảnh xem thử...');
+    beginTask('Đang Render & Cắt ảnh xem thử...');
 
     const format = document.getElementById('exportFormat').value;
     const ext = format === 'image/png' ? 'png' : 'jpg';
@@ -1144,10 +1180,10 @@ async function applyCurrentCutsAndRender() {
                     cutPoints: [],
                     forcedCuts: new Set(),
                     cropRegions: [],
-                    history: []
+                    lastBackup: null
                 });
             }
-            await sleep(30);
+            if (i % 10 === 0) await sleep(0);
         }
 
         if (shouldStop) throw new Error('Đã dừng');
@@ -1164,9 +1200,7 @@ async function applyCurrentCutsAndRender() {
     } catch (e) {
         showToast('❌ Lỗi Render: ' + e.message, true);
     } finally {
-        showProgress(false);
-        isProcessing = false;
-        setButtonsDisabled(false);
+        endTask();
     }
 }
 
@@ -1249,7 +1283,7 @@ function renderSeamOverlay(blockIndex) {
 
     const sorted = seamPoints.slice().sort((a, b) => a.x - b.x);
 
-    // Nối ngang sang mép trái (Thanh xanh số 1 trong sơ đồ)
+    // Điểm đầu tiên nối ngang sang mép trái (Thanh xanh số 1 trong sơ đồ)
     const firstPt = sorted[0];
     const lastPt = sorted[sorted.length - 1];
 
@@ -1261,7 +1295,7 @@ function renderSeamOverlay(blockIndex) {
     leftEdge.setAttribute('class', 'seam-edge-line');
     overlay.appendChild(leftEdge);
 
-    // Nối ngang sang mép phải (Thanh xanh số 3 trong sơ đồ)
+    // Điểm cuối cùng nối ngang sang mép phải (Thanh xanh số 3 trong sơ đồ)
     const rightEdge = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     rightEdge.setAttribute('x1', lastPt.x * scale);
     rightEdge.setAttribute('y1', lastPt.y * scale);
@@ -1339,16 +1373,18 @@ async function applySeamSplit() {
     showProgress(true, `Đang dời dãn khung tranh (Dời ${totalShift}px)...`);
 
     try {
-        // LƯU LỊCH SỬ ĐỂ HOÀN TÁC (UNDO)
-        if (!block.history) block.history = [];
-        block.history.push({
+        // LƯU LỊCH SỬ 1 BƯỚC ĐỂ HOÀN TÁC (KHÔNG LƯU VÔ TẬN TRÁNH TRÀN RAM)
+        if (block.lastBackup && block.lastBackup.url) {
+            URL.revokeObjectURL(block.lastBackup.url);
+        }
+        block.lastBackup = {
             url: block.url,
             height: block.height,
             width: block.width,
             cutPoints: [...block.cutPoints],
             cropRegions: JSON.parse(JSON.stringify(block.cropRegions)),
             forcedCuts: new Set(block.forcedCuts || [])
-        });
+        };
         document.getElementById('undoSeamBtn').style.display = 'block';
 
         const img = await getLoadedImage(block.url);
@@ -1395,10 +1431,11 @@ async function applySeamSplit() {
         ctx.restore();
 
         const format = document.getElementById('exportFormat').value;
-        const blob = await new Promise(r => canvas.toBlob(r, format, 1.0));
+        const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Lỗi xuất canvas')), format, 1.0);
+        });
         canvas.width = 0; canvas.height = 0;
 
-        URL.revokeObjectURL(block.url);
         block.url = URL.createObjectURL(blob);
         block.height = newH;
 
@@ -1434,13 +1471,13 @@ async function applySeamSplit() {
 
 // HOÀN TÁC TÁCH KHUNG
 function undoSeamSplit() {
-    const activeBlocks = imageBlocks.filter(b => b.history && b.history.length > 0);
+    const activeBlocks = imageBlocks.filter(b => b.lastBackup);
     if (!activeBlocks.length) {
         showToast('⚠️ Không có thao tác tách nào để hoàn tác!', true);
         return;
     }
     const block = activeBlocks[activeBlocks.length - 1];
-    const prev = block.history.pop();
+    const prev = block.lastBackup;
     if (prev) {
         URL.revokeObjectURL(block.url);
         block.url = prev.url;
@@ -1449,10 +1486,9 @@ function undoSeamSplit() {
         block.cutPoints = prev.cutPoints;
         block.cropRegions = prev.cropRegions;
         block.forcedCuts = prev.forcedCuts || new Set();
+        block.lastBackup = null;
 
-        if (block.history.length === 0) {
-            document.getElementById('undoSeamBtn').style.display = 'none';
-        }
+        document.getElementById('undoSeamBtn').style.display = 'none';
         renderAll();
         showToast('↩️ Đã hoàn tác phục hồi ảnh gốc ban đầu!');
     }
@@ -1489,7 +1525,7 @@ function renderAll() {
     if (!imageBlocks.length) {
         emptyLayer.style.display = 'flex';
         viewport.style.display = 'none';
-        updateStats();
+        markStatsDirty();
         return;
     }
 
@@ -1515,7 +1551,7 @@ function renderAll() {
         }
     });
 
-    updateStats();
+    markStatsDirty();
 }
 
 function createBlockElement(block, index) {
@@ -1557,14 +1593,16 @@ function createBlockElement(block, index) {
     return div;
 }
 
-function renderAllOverlays(block, blockIndex, container) {
+// GIỚI HẠN RETRY TRÁNH TREO VÔ HẠN (FIX BUG #005)
+function renderAllOverlays(block, blockIndex, container, retryCount = 0) {
     const cutOverlay = document.getElementById(`cut-overlay-${blockIndex}`);
     if (!cutOverlay) return;
     cutOverlay.innerHTML = '';
 
     const imgDiv = container.querySelector('.image-chunk');
     if (!imgDiv || !imgDiv.offsetHeight) {
-        setTimeout(() => renderAllOverlays(block, blockIndex, container), 50);
+        if (retryCount >= 20) return;
+        setTimeout(() => renderAllOverlays(block, blockIndex, container, retryCount + 1), 50);
         return;
     }
     const scale = imgDiv.offsetHeight / block.height;
@@ -1642,7 +1680,6 @@ function createCropRegion(block, region, blockIndex, regionIdx, scale) {
     removeBtn.onclick = () => removeCropRegion(blockIndex, regionIdx);
     container.appendChild(removeBtn);
 
-    // Tay cầm kéo mép trên (chỉ hiện nếu không phải nối từ đỉnh ảnh trên xuống)
     if (!region.isCross || region.crossRole === 'top') {
         const topDrag = document.createElement('div');
         topDrag.className = 'crop-drag-top';
@@ -1658,7 +1695,6 @@ function createCropRegion(block, region, blockIndex, regionIdx, scale) {
         container.appendChild(topDrag);
     }
 
-    // Tay cầm kéo mép dưới (chỉ hiện nếu không phải nối chạm đáy ảnh)
     if (!region.isCross || region.crossRole === 'bottom') {
         const bottomDrag = document.createElement('div');
         bottomDrag.className = 'crop-drag-bottom';
@@ -1700,7 +1736,7 @@ function handleImageClick(e, block, blockIndex) {
             block.cutPoints.push(actualY);
             block.cutPoints.sort((a, b) => a - b);
             renderAllOverlays(block, blockIndex, imgDiv.closest('.image-content'));
-            updateStats();
+            markStatsDirty();
         }
     } else if (currentMode === 'crop') {
         if (!cropTempPoint) {
@@ -1713,14 +1749,13 @@ function handleImageClick(e, block, blockIndex) {
             const y2 = actualY;
 
             if (b1 === b2) {
-                // Crop trên cùng 1 ảnh
                 const startY = Math.min(y1, y2);
                 const endY = Math.max(y1, y2);
                 if (endY - startY > 5) {
                     block.cropRegions.push({ startY, endY });
                     block.cropRegions = mergeOverlappingCropRegions(block.cropRegions);
                     renderAllOverlays(block, blockIndex, imgDiv.closest('.image-content'));
-                    updateStats();
+                    markStatsDirty();
                 }
             } else {
                 // CROP XUYÊN 2 ẢNH LIỀN KỀ HOẶC CÁCH NHAU
@@ -1730,7 +1765,6 @@ function handleImageClick(e, block, blockIndex) {
                 const endY = (lastIdx === b2) ? y2 : y1;
                 const cropId = 'crop_' + Date.now();
 
-                // 1. Ảnh trên: Từ điểm tap đến kịch đáy
                 imageBlocks[firstIdx].cropRegions.push({
                     startY: startY,
                     endY: imageBlocks[firstIdx].height,
@@ -1739,7 +1773,6 @@ function handleImageClick(e, block, blockIndex) {
                     crossRole: 'top'
                 });
 
-                // 2. Các ảnh ở giữa (nếu có): Bỏ trọn vẹn
                 for (let m = firstIdx + 1; m < lastIdx; m++) {
                     imageBlocks[m].cropRegions.push({
                         startY: 0,
@@ -1750,7 +1783,6 @@ function handleImageClick(e, block, blockIndex) {
                     });
                 }
 
-                // 3. Ảnh dưới: Từ đỉnh (0) đến điểm tap
                 imageBlocks[lastIdx].cropRegions.push({
                     startY: 0,
                     endY: endY,
@@ -1759,12 +1791,11 @@ function handleImageClick(e, block, blockIndex) {
                     crossRole: 'bottom'
                 });
 
-                // Vẽ lại overlay cho toàn bộ các ảnh liên quan
                 for (let k = firstIdx; k <= lastIdx; k++) {
                     const el = document.getElementById(`block-${k}`);
                     if (el) renderAllOverlays(imageBlocks[k], k, el.querySelector('.image-content'));
                 }
-                updateStats();
+                markStatsDirty();
                 showToast(`🗑️ Đã tạo dải Crop liên ảnh (Đáy ảnh #${firstIdx + 1} ➔ Đỉnh ảnh #${lastIdx + 1})`);
             }
             cropTempPoint = null;
@@ -1777,10 +1808,9 @@ function removeCutPoint(block, y, blockIndex) {
     if (block.forcedCuts instanceof Set) block.forcedCuts.delete(y);
     const blockEl = document.getElementById(`block-${blockIndex}`);
     if (blockEl) renderAllOverlays(block, blockIndex, blockEl.querySelector('.image-content'));
-    updateStats();
+    markStatsDirty();
 }
 
-// XÓA VÙNG CROP (HỖ TRỢ XÓA ĐỒNG BỘ CẢ 2 ẢNH NẾU LÀ CROP LIÊN ẢNH)
 function removeCropRegion(blockIndex, regionIdx) {
     const targetRegion = imageBlocks[blockIndex].cropRegions[regionIdx];
     if (targetRegion && targetRegion.cropId) {
@@ -1799,7 +1829,7 @@ function removeCropRegion(blockIndex, regionIdx) {
         const blockEl = document.getElementById(`block-${blockIndex}`);
         if (blockEl) renderAllOverlays(imageBlocks[blockIndex], blockIndex, blockEl.querySelector('.image-content'));
     }
-    updateStats();
+    markStatsDirty();
 }
 
 function toggleMerge(index) {
@@ -1943,13 +1973,13 @@ function handleDragEnd() {
         }
         renderAllOverlays(draggedCutLine.block, draggedCutLine.blockIndex, draggedCutLine.imgDiv.closest('.image-content'));
         draggedCutLine = null;
-        updateStats();
+        markStatsDirty();
     }
     if (draggedCropRegion) {
         draggedCropRegion.block.cropRegions = mergeOverlappingCropRegions(draggedCropRegion.block.cropRegions);
         renderAllOverlays(draggedCropRegion.block, draggedCropRegion.blockIndex, draggedCropRegion.imgDiv.closest('.image-content'));
         draggedCropRegion = null;
-        updateStats();
+        markStatsDirty();
     }
 }
 
@@ -2045,6 +2075,13 @@ function subtractCropRanges(start, end, cropRegions) {
     return ranges;
 }
 
+// DEBOUNCE STATS UPDATE (FIX BUG #006)
+let _statsTimer = null;
+function markStatsDirty() {
+    clearTimeout(_statsTimer);
+    _statsTimer = setTimeout(updateStats, 120);
+}
+
 function updateStats() {
     document.getElementById('statOriginal').textContent = imageBlocks.length;
     let groups = 0, i = 0;
@@ -2058,7 +2095,7 @@ function updateStats() {
     document.getElementById('statOutput').textContent = imageBlocks.length ? buildOutputSegments().length : 0;
 }
 
-// KHỬ HOÀN TOÀN VIỀN ĐEN: TRÁNG NỀN TRẮNG CHUẨN + TỌA ĐỘ NGUYÊN
+// KHỬ HOÀN TOÀN VIỀN ĐEN + AN TOÀN TOBLOB (FIX BUG #013)
 async function renderSegmentToBlob(segment) {
     const { mappedBlocks, visibleRanges, targetWidth, netHeight } = segment;
     const format = document.getElementById('exportFormat').value;
@@ -2099,7 +2136,13 @@ async function renderSegmentToBlob(segment) {
         }
     }
 
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, format, 1.0));
+    const blob = await new Promise((resolve, reject) => {
+        try {
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas quá lớn hoặc hết RAM')), format, 1.0);
+        } catch (e) {
+            reject(e);
+        }
+    });
     canvas.width = 0; canvas.height = 0;
     return blob;
 }
@@ -2114,9 +2157,7 @@ function buildFilename(prefix, index, randomID, ext = 'jpg') {
 // ==================== EXPORT HANDLERS (DÙNG ZIPLIB.JS) ====================
 async function downloadZIP() {
     if (!imageBlocks.length || isProcessing) return;
-    isProcessing = true; shouldStop = false;
-    setButtonsDisabled(true);
-    showProgress(true, 'Đang chuẩn bị cắt & đóng gói ZIP...');
+    beginTask('Đang chuẩn bị cắt & đóng gói ZIP...');
 
     const segments = buildOutputSegments();
     const prefix = document.getElementById('outputPrefix').value || 'cut';
@@ -2135,14 +2176,14 @@ async function downloadZIP() {
                 const filename = buildFilename(prefix, i, randomID, ext);
                 await uZip.addFile(filename, blob);
             }
-            await sleep(20);
+            if (i % 8 === 0) await sleep(0);
         } catch (err) {
             console.error('Lỗi segment', i, err);
         }
     }
 
     if (shouldStop) {
-        showProgress(false); isProcessing = false; setButtonsDisabled(false);
+        endTask();
         showToast('⏹️ Đã dừng thao tác', true);
         return;
     }
@@ -2153,17 +2194,13 @@ async function downloadZIP() {
     const zipName = useRandom ? `${prefix}_${randomID}.zip` : `${prefix}.zip`;
     uZip.download(zipName);
 
-    showProgress(false);
-    isProcessing = false;
-    setButtonsDisabled(false);
+    endTask();
     showToast(`✅ Đã tải file: ${zipName}`);
 }
 
 async function downloadAllJPG() {
     if (!imageBlocks.length || isProcessing) return;
-    isProcessing = true; shouldStop = false;
-    setButtonsDisabled(true);
-    showProgress(true, 'Đang tải từng ảnh rời...');
+    beginTask('Đang tải từng ảnh rời...');
 
     const segments = buildOutputSegments();
     const prefix = document.getElementById('outputPrefix').value || 'cut';
@@ -2182,7 +2219,7 @@ async function downloadAllJPG() {
                 const a = document.createElement('a');
                 a.href = url; a.download = filename;
                 document.body.appendChild(a); a.click();
-                setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 20000);
+                setTimeout(() => URL.revokeObjectURL(url), 20000);
                 await sleep(350);
             }
         } catch (err) {
@@ -2190,15 +2227,13 @@ async function downloadAllJPG() {
         }
     }
 
-    showProgress(false); isProcessing = false; setButtonsDisabled(false);
+    endTask();
     showToast('✅ Đã tải toàn bộ ảnh xong!');
 }
 
 async function downloadPDF() {
     if (!imageBlocks.length || isProcessing) return;
-    isProcessing = true; shouldStop = false;
-    setButtonsDisabled(true);
-    showProgress(true, 'Đang xuất PDF...');
+    beginTask('Đang xuất PDF...');
 
     const segments = buildOutputSegments();
     const prefix = document.getElementById('outputPrefix').value || 'cut';
@@ -2228,12 +2263,12 @@ async function downloadPDF() {
         const pdfName = useRandom ? `${prefix}_${randomID}.pdf` : `${prefix}.pdf`;
         a.href = url; a.download = pdfName;
         document.body.appendChild(a); a.click();
-        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 20000);
+        setTimeout(() => URL.revokeObjectURL(url), 20000);
         showToast(`✅ Đã xuất file PDF!`);
     } catch (e) {
         showToast('❌ Lỗi PDF: ' + e.message, true);
     } finally {
-        showProgress(false); isProcessing = false; setButtonsDisabled(false);
+        endTask();
     }
 }
 
@@ -2309,21 +2344,28 @@ document.getElementById('configInput').addEventListener('change', async e => {
     e.target.value = '';
 });
 
-// ==================== UI RANGE & CONTROLS ====================
+// ==================== UI RANGE (DEBOUNCE RENDER - FIX BUG #007) ====================
+let _sliderTimer = null;
 function setupRangeInputs() {
     const slider = document.getElementById('targetWidth');
     const input = document.getElementById('targetWidthInput');
+    
     slider.addEventListener('input', e => {
         targetWidthValue = parseInt(e.target.value) || 900;
         input.value = targetWidthValue;
-        updateStats();
+        markStatsDirty();
+        
+        clearTimeout(_sliderTimer);
+        _sliderTimer = setTimeout(() => {
+            if (imageBlocks.length) renderAll();
+        }, 150);
     });
+    
     input.addEventListener('change', e => {
         let v = parseInt(e.target.value) || 900;
         v = Math.max(500, Math.min(4000, v));
         targetWidthValue = v;
         slider.value = v;
-        updateStats();
         renderAll();
     });
 }
@@ -2335,7 +2377,7 @@ function setButtonsDisabled(d) {
     });
     document.getElementById('stopBtn').style.display = d ? 'block' : 'none';
 }
-function stopProcess() { shouldStop = true; document.getElementById('stopBtn').disabled = true; }
+
 function showProgress(s, t = '') {
     document.getElementById('progressOverlay').classList.toggle('visible', s);
     if (t) document.getElementById('progressText').textContent = t;
@@ -2350,7 +2392,10 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function clearAll() {
     if (!confirm('Bạn có chắc muốn xoá toàn bộ dữ liệu hiện tại không?')) return;
-    imageBlocks.forEach(b => { if (b.url) URL.revokeObjectURL(b.url); });
+    imageBlocks.forEach(b => { 
+        if (b.url) URL.revokeObjectURL(b.url);
+        if (b.lastBackup && b.lastBackup.url) URL.revokeObjectURL(b.lastBackup.url);
+    });
     imageElementCache.clear();
     imageBlocks = [];
     mergeStates = [];
